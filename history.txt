@@ -1,0 +1,17 @@
+commit a443d55aa022c906ca86d85d92b6816740a0ba45 (HEAD -> master)
+Author: Minahil-Hamza <dr.minahil.ashraf009@gmail.com>
+Date:   Sat Dec 6 01:44:58 2025 +0500
+
+    Fix: Corrected author keys in blog posts
+
+commit 67e17cba72182a91b5c1a2c3199a51065d01924b
+Author: Minahil-Hamza <dr.minahil.ashraf009@gmail.com>
+Date:   Fri Dec 5 23:28:55 2025 +0500
+
+    feat: Implement RAG-based chatbot with Gemini
+
+commit 539c9fb2b35c7a9e0e992450619fd71d9900d0f9
+Author: Minahil-Hamza <dr.minahil.ashraf009@gmail.com>
+Date:   Fri Dec 5 23:13:42 2025 +0500
+
+    feat: Add chatbot placeholder and navigation

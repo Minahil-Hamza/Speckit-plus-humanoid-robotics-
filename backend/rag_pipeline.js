@@ -6,7 +6,7 @@ const markdownit = require('markdown-it')();
 // Load environment variables from backend directory
 require('dotenv').config();
 
-const MODEL_NAME = "gemini-pro"; // Or "gemini-ultra" if available and desired
+const MODEL_NAME = "gemini-2.0-flash-exp"; // Updated to current Gemini model
 const API_KEY = process.env.GEMINI_API_KEY;
 
 if (!API_KEY) {

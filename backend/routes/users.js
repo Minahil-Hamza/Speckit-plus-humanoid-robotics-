@@ -1,7 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const prisma = require('../lib/prisma');
 const { protect } = require('../middleware/auth');
+
+// Import the in-memory users from auth route
+// Since we're using module-scoped variables, we'll access the users array differently
+// We'll create a global variable to share the users data
+if (!global.users) {
+  global.users = [];
+  global.nextUserId = 1;
+}
 
 // @route   PUT /api/users/progress
 // @desc    Update user progress
@@ -17,48 +24,39 @@ router.put('/progress', protect, async (req, res) => {
   }
 
   try {
+    const userIndex = global.users.findIndex(user => user.id === req.user.id);
+
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     if (action === 'complete') {
       // Check if module already completed
-      const existingModule = await prisma.completedModule.findFirst({
-        where: {
-          userId: req.user.id,
-          moduleId
-        }
-      });
+      const existingModule = global.users[userIndex].completedModules.find(m => m.moduleId === moduleId);
 
       if (!existingModule) {
         // Add completed module
-        await prisma.completedModule.create({
-          data: {
-            moduleId,
-            userId: req.user.id
-          }
+        global.users[userIndex].completedModules.push({
+          moduleId,
+          completedAt: new Date()
         });
       }
     } else if (action === 'start') {
       // Update current module
-      await prisma.user.update({
-        where: { id: req.user.id },
-        data: { currentModule: moduleId }
-      });
+      global.users[userIndex].currentModule = moduleId;
     }
-
-    // Get updated progress
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: {
-        completedModules: true
-      }
-    });
 
     res.json({
       success: true,
       message: 'Progress updated successfully',
       data: {
         progress: {
-          completedModules: user.completedModules,
-          currentModule: user.currentModule,
-          bookmarks: user.bookmarks
+          completedModules: global.users[userIndex].completedModules,
+          currentModule: global.users[userIndex].currentModule,
+          bookmarks: global.users[userIndex].bookmarks
         }
       }
     });
@@ -85,11 +83,16 @@ router.post('/bookmark', protect, async (req, res) => {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    });
+    const userIndex = global.users.findIndex(user => user.id === req.user.id);
 
-    let bookmarks = user.bookmarks || [];
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    let bookmarks = global.users[userIndex].bookmarks || [];
 
     if (action === 'add') {
       if (!bookmarks.includes(pageUrl)) {
@@ -100,10 +103,7 @@ router.post('/bookmark', protect, async (req, res) => {
     }
 
     // Update bookmarks
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { bookmarks }
-    });
+    global.users[userIndex].bookmarks = bookmarks;
 
     res.json({
       success: true,
@@ -124,13 +124,16 @@ router.post('/bookmark', protect, async (req, res) => {
 // @access  Private
 router.get('/stats', protect, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: {
-        completedModules: true
-      }
-    });
+    const userIndex = global.users.findIndex(user => user.id === req.user.id);
 
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user = global.users[userIndex];
     const stats = {
       totalModulesCompleted: user.completedModules.length,
       currentModule: user.currentModule,

@@ -3,8 +3,11 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const prisma = require('../lib/prisma');
 const { protect } = require('../middleware/auth');
+
+// In-memory user storage for testing (in production, use a real database)
+let users = [];
+let nextUserId = 1;
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -34,10 +37,7 @@ router.post('/register', [
 
   try {
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
+    const existingUser = users.find(user => user.email === email);
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -50,17 +50,26 @@ router.post('/register', [
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create new user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        lastLogin: new Date()
-      }
-    });
+    const user = {
+      id: nextUserId++,
+      name,
+      email,
+      password: hashedPassword,
+      role: 'student',
+      createdAt: new Date(),
+      lastLogin: new Date(),
+      completedModules: [],
+      currentModule: null,
+      bookmarks: []
+    };
+
+    users.push(user);
 
     // Generate token
     const token = generateToken(user.id);
+
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
 
     res.status(201).json({
       success: true,
@@ -68,11 +77,12 @@ router.post('/register', [
       data: {
         token,
         user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt
+          ...userWithoutPassword,
+          progress: {
+            completedModules: user.completedModules,
+            currentModule: user.currentModule,
+            bookmarks: user.bookmarks
+          }
         }
       }
     });
@@ -106,12 +116,7 @@ router.post('/login', [
 
   try {
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        completedModules: true
-      }
-    });
+    const user = users.find(user => user.email === email);
 
     if (!user) {
       return res.status(401).json({
@@ -131,10 +136,7 @@ router.post('/login', [
     }
 
     // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLogin: new Date() }
-    });
+    user.lastLogin = new Date();
 
     // Generate token
     const token = generateToken(user.id);
@@ -172,12 +174,7 @@ router.post('/login', [
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: {
-        completedModules: true
-      }
-    });
+    const user = users.find(u => u.id === req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -241,15 +238,17 @@ router.put('/update-profile', [
   const { name, email } = req.body;
 
   try {
+    const userIndex = users.findIndex(u => u.id === req.user.id);
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     // Check if email is already taken by another user
     if (email) {
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          email,
-          NOT: { id: req.user.id }
-        }
-      });
-
+      const existingUser = users.find(u => u.email === email && u.id !== req.user.id);
       if (existingUser) {
         return res.status(400).json({
           success: false,
@@ -259,16 +258,14 @@ router.put('/update-profile', [
     }
 
     // Update user
-    const user = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        ...(name && { name }),
-        ...(email && { email })
-      }
-    });
+    users[userIndex] = {
+      ...users[userIndex],
+      ...(name && { name }),
+      ...(email && { email })
+    };
 
     // Remove password
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, ...userWithoutPassword } = users[userIndex];
 
     res.json({
       success: true,
@@ -303,9 +300,15 @@ router.put('/change-password', [
   const { currentPassword, newPassword } = req.body;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    });
+    const userIndex = users.findIndex(u => u.id === req.user.id);
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user = users[userIndex];
 
     // Check current password
     const isMatch = await bcrypt.compare(currentPassword, user.password);
@@ -321,10 +324,7 @@ router.put('/change-password', [
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     // Update password
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { password: hashedPassword }
-    });
+    user.password = hashedPassword;
 
     res.json({
       success: true,

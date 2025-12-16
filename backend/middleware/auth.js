@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const prisma = require('../lib/prisma');
 
 // Protect routes - verify JWT token
 exports.protect = async (req, res, next) => {
@@ -22,29 +21,27 @@ exports.protect = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-in-production');
 
-    // Get user from token (exclude password)
-    req.user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        avatar: true,
-        currentModule: true,
-        bookmarks: true,
-        isEmailVerified: true,
-        createdAt: true,
-        lastLogin: true
-      }
-    });
+    // Get user from in-memory storage
+    const user = global.users ? global.users.find(u => u.id === decoded.id) : null;
 
-    if (!req.user) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'User not found'
       });
     }
+
+    // Set user info without the password
+    req.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      currentModule: user.currentModule,
+      bookmarks: user.bookmarks,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin
+    };
 
     next();
   } catch (error) {

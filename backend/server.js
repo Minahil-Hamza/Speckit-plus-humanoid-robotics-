@@ -51,7 +51,13 @@ try {
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'https://physical-ai-robotics-chi.vercel.app',
+    'https://physical-ai-robotics-minahil-hamzas-projects.vercel.app',
+    'https://physical-ai-robotics-lmpl2ni7e-minahil-hamzas-projects.vercel.app',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true
 }));
 

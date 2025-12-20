@@ -6,8 +6,11 @@ const bcrypt = require('bcryptjs');
 const { protect } = require('../middleware/auth');
 
 // In-memory user storage for testing (in production, use a real database)
-let users = [];
-let nextUserId = 1;
+// Using global variable to make it accessible across routes
+global.users = global.users || [];
+global.nextUserId = global.nextUserId || 1;
+let users = global.users;
+let nextUserId = global.nextUserId;
 
 // Generate JWT Token
 const generateToken = (id) => {

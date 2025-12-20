@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const OpenAI = require('openai');
 
 // Load environment variables
 dotenv.config();
@@ -10,9 +11,10 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Claude (Anthropic) API setup
+// API key setup
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.openai_api_key || process.env.openai_api; // Support different naming conventions
 
 if (!CLAUDE_API_KEY) {
     console.log("CLAUDE_API_KEY is not set in the .env file. Using fallback responses.");
@@ -22,8 +24,13 @@ if (!GEMINI_API_KEY) {
     console.log("GEMINI_API_KEY is not set in the .env file. Using fallback responses.");
 }
 
+if (!OPENAI_API_KEY) {
+    console.log("OPENAI_API_KEY is not set in the .env file. Using fallback responses.");
+}
+
 const anthropic = CLAUDE_API_KEY ? new Anthropic({ apiKey: CLAUDE_API_KEY }) : null;
 const gemini = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 
 // Import RAG pipeline if API keys are available
 let ragPipeline = null;
@@ -458,9 +465,132 @@ if (global.localRAG) {
     console.log("Local RAG system not available");
 }
 
-// Enhanced Chat API endpoint with fallback options
-app.post('/api/chat', async (req, res) => {
-    const { query } = req.body;
+// Function to translate text to Urdu
+async function translateToUrdu(text, aiProvider = null) {
+    try {
+        // Create a prompt for translation
+        const translationPrompt = `Translate the following text to Urdu (Pakistan). Only provide the translation and nothing else:\n\n${text}`;
+
+        // Try to use the best available AI provider for translation
+        if (aiProvider === 'claude' && anthropic) {
+            try {
+                const message = await anthropic.messages.create({
+                    model: "claude-3-5-sonnet-20241022",
+                    max_tokens: 1024,
+                    system: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else.",
+                    messages: [
+                        {
+                            role: "user",
+                            content: translationPrompt
+                        }
+                    ]
+                });
+                return message.content[0].text;
+            } catch (error) {
+                console.error('Claude translation failed:', error);
+            }
+        } else if (aiProvider === 'openai' && openai) {
+            try {
+                const chatCompletion = await openai.chat.completions.create({
+                    model: "gpt-4o",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else."
+                        },
+                        {
+                            role: "user",
+                            content: translationPrompt
+                        }
+                    ],
+                    max_tokens: 1024,
+                    temperature: 0.3,
+                });
+                return chatCompletion.choices[0].message.content;
+            } catch (error) {
+                console.error('OpenAI translation failed:', error);
+            }
+        } else if (aiProvider === 'gemini' && gemini) {
+            try {
+                const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+                const result = await model.generateContent(translationPrompt);
+                const response = await result.response;
+                return response.text();
+            } catch (error) {
+                console.error('Gemini translation failed:', error);
+            }
+        }
+
+        // If specific provider fails or isn't specified, try them in order of preference
+        const providers = ['claude', 'openai', 'gemini'];
+        for (const provider of providers) {
+            if (provider === 'claude' && anthropic) {
+                try {
+                    const message = await anthropic.messages.create({
+                        model: "claude-3-5-sonnet-20241022",
+                        max_tokens: 1024,
+                        system: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else.",
+                        messages: [
+                            {
+                                role: "user",
+                                content: translationPrompt
+                            }
+                        ]
+                    });
+                    return message.content[0].text;
+                } catch (error) {
+                    console.error(`Claude translation failed:`, error);
+                    continue;
+                }
+            } else if (provider === 'openai' && openai) {
+                try {
+                    const chatCompletion = await openai.chat.completions.create({
+                        model: "gpt-4o",
+                        messages: [
+                            {
+                                role: "system",
+                                content: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else."
+                            },
+                            {
+                                role: "user",
+                                content: translationPrompt
+                            }
+                        ],
+                        max_tokens: 1024,
+                        temperature: 0.3,
+                    });
+                    return chatCompletion.choices[0].message.content;
+                } catch (error) {
+                    console.error(`OpenAI translation failed:`, error);
+                    continue;
+                }
+            } else if (provider === 'gemini' && gemini) {
+                try {
+                    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+                    const result = await model.generateContent(translationPrompt);
+                    const response = await result.response;
+                    return response.text();
+                } catch (error) {
+                    console.error(`Gemini translation failed:`, error);
+                    continue;
+                }
+            }
+        }
+
+        // If all AI providers fail, return the original text
+        return text;
+    } catch (error) {
+        console.error('Translation function error:', error);
+        return text; // Return original text if translation fails
+    }
+}
+
+// Protect the chat endpoint with authentication
+const { protect } = require('./middleware/auth');
+
+// Enhanced Chat API endpoint with fallback options, Urdu translation support, and authentication
+app.post('/api/chat', protect, async (req, res) => {
+    const { query, language } = req.body; // Added language parameter
 
     if (!query) {
         return res.status(400).json({
@@ -469,7 +599,7 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    console.log(`Received query: "${query.substring(0, 100)}${query.length > 100 ? '...' : ''}"`);
+    console.log(`Received query: "${query.substring(0, 100)}${query.length > 100 ? '...' : ''}" in language: ${language || 'default'} from user: ${req.user.email}`);
 
     try {
         let answer = '';
@@ -497,40 +627,179 @@ app.post('/api/chat', async (req, res) => {
             } catch (claudeError) {
                 console.error("Claude API failed:", claudeError.message || claudeError);
 
-                // Try local RAG system for document retrieval
+                // Try OpenAI API if Claude failed
+                if (openai) {
+                    console.log("Attempting to use OpenAI API...");
+                    try {
+                        const chatCompletion = await openai.chat.completions.create({
+                            model: "gpt-4o", // Using gpt-4o for better performance and cost
+                            messages: [
+                                {
+                                    role: "system",
+                                    content: "You are a helpful AI assistant for a Physical AI & Robotics course. Help students understand concepts related to ROS2, robotics simulation, digital twins, AI robot brains, vision-language-action models, and related topics. Provide clear, concise explanations based on the context provided. Always be accurate, educational, and encourage deeper learning."
+                                },
+                                {
+                                    role: "user",
+                                    content: query
+                                }
+                            ],
+                            max_tokens: 1024,
+                            temperature: 0.7,
+                        });
+
+                        answer = chatCompletion.choices[0].message.content;
+                        sourceInfo = 'openai';
+                        console.log("Successfully responded using OpenAI API");
+                    } catch (openaiError) {
+                        console.error("OpenAI API failed:", openaiError.message || openaiError);
+
+                        // Try local RAG system for document retrieval
+                        try {
+                            console.log("Attempting to use local RAG system...");
+                            const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
+
+                            if (relevantDocs.length > 0) {
+                                console.log(`Found ${relevantDocs.length} relevant documents from local RAG`);
+                                const context = relevantDocs.map(doc => doc.text).join('\n\n');
+                                const combinedQuery = `Based on the following context from a Physical AI & Robotics textbook, please answer the question. If the context doesn't contain enough information, say so.\n\nContext:\n${context}\n\nQuestion: ${query}\n\nAnswer:`;
+
+                                // Try Gemini if available
+                                if (gemini) {
+                                    try {
+                                        console.log("Attempting to use Gemini with local RAG context...");
+                                        const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+                                        const result = await model.generateContent(combinedQuery);
+                                        const response = await result.response;
+                                        answer = response.text();
+                                        sourceInfo = 'gemini_with_rag';
+                                        console.log("Successfully responded using Gemini with local RAG context");
+                                    } catch (geminiError) {
+                                        console.log("Gemini failed with RAG context, using RAG context directly...");
+                                        sourceInfo = 'rag_context_only';
+                                        // Generate answer from context directly
+                                        answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
+                                    }
+                                } else {
+                                    // Use context directly
+                                    sourceInfo = 'rag_context_only';
+                                    answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
+                                    console.log("Responding using RAG context directly (no Gemini)");
+                                }
+                            } else {
+                                console.log("No relevant documents found in local RAG, using enhanced fallback...");
+                                answer = getResponse(query);
+                                sourceInfo = 'enhanced_fallback';
+                            }
+                        } catch (ragError) {
+                            console.error("Local RAG failed:", ragError.message);
+                            console.error("Stack trace:", ragError.stack);
+                            answer = getResponse(query);
+                            sourceInfo = 'enhanced_fallback_after_rag_error';
+                        }
+                    }
+                } else {
+                    // If OpenAI is not available, try local RAG system for document retrieval
+                    try {
+                        console.log("Attempting to use local RAG system...");
+                        const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
+
+                        if (relevantDocs.length > 0) {
+                            console.log(`Found ${relevantDocs.length} relevant documents from local RAG`);
+                            const context = relevantDocs.map(doc => doc.text).join('\n\n');
+                            const combinedQuery = `Based on the following context from a Physical AI & Robotics textbook, please answer the question. If the context doesn't contain enough information, say so.\n\nContext:\n${context}\n\nQuestion: ${query}\n\nAnswer:`;
+
+                            // Try Gemini if available
+                            if (gemini) {
+                                try {
+                                    console.log("Attempting to use Gemini with local RAG context...");
+                                    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+                                    const result = await model.generateContent(combinedQuery);
+                                    const response = await result.response;
+                                    answer = response.text();
+                                    sourceInfo = 'gemini_with_rag';
+                                    console.log("Successfully responded using Gemini with local RAG context");
+                                } catch (geminiError) {
+                                    console.log("Gemini failed with RAG context, using RAG context directly...");
+                                    sourceInfo = 'rag_context_only';
+                                    // Generate answer from context directly
+                                    answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
+                                }
+                            } else {
+                                // Use context directly
+                                sourceInfo = 'rag_context_only';
+                                answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
+                                console.log("Responding using RAG context directly (no Gemini)");
+                            }
+                        } else {
+                            console.log("No relevant documents found in local RAG, using enhanced fallback...");
+                            answer = getResponse(query);
+                            sourceInfo = 'enhanced_fallback';
+                        }
+                    } catch (ragError) {
+                        console.error("Local RAG failed:", ragError.message);
+                        console.error("Stack trace:", ragError.stack);
+                        answer = getResponse(query);
+                        sourceInfo = 'enhanced_fallback_after_rag_error';
+                    }
+                }
+            }
+        }
+        // If Claude is not available, try OpenAI first, then fall back to the original flow
+        else if (openai) {
+            console.log("Claude API not available, attempting to use OpenAI API...");
+            try {
+                const chatCompletion = await openai.chat.completions.create({
+                    model: "gpt-4o", // Using gpt-4o for better performance and cost
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a helpful AI assistant for a Physical AI & Robotics course. Help students understand concepts related to ROS2, robotics simulation, digital twins, AI robot brains, vision-language-action models, and related topics. Provide clear, concise explanations based on the context provided. Always be accurate, educational, and encourage deeper learning."
+                        },
+                        {
+                            role: "user",
+                            content: query
+                        }
+                    ],
+                    max_tokens: 1024,
+                    temperature: 0.7,
+                });
+
+                answer = chatCompletion.choices[0].message.content;
+                sourceInfo = 'openai';
+                console.log("Successfully responded using OpenAI API");
+            } catch (openaiError) {
+                console.error("OpenAI API failed:", openaiError.message || openaiError);
+
+                // Fall back to the original logic with Gemini and RAG
+                console.log("OpenAI API not available, attempting to use local RAG system...");
                 try {
-                    console.log("Attempting to use local RAG system...");
                     const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
 
-                    if (relevantDocs.length > 0) {
-                        console.log(`Found ${relevantDocs.length} relevant documents from local RAG`);
+                    if (relevantDocs.length > 0 && gemini) {
+                        console.log(`Found ${relevantDocs.length} relevant documents from local RAG, attempting to use with Gemini...`);
                         const context = relevantDocs.map(doc => doc.text).join('\n\n');
                         const combinedQuery = `Based on the following context from a Physical AI & Robotics textbook, please answer the question. If the context doesn't contain enough information, say so.\n\nContext:\n${context}\n\nQuestion: ${query}\n\nAnswer:`;
 
-                        // Try Gemini if available
-                        if (gemini) {
-                            try {
-                                console.log("Attempting to use Gemini with local RAG context...");
-                                const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-                                const result = await model.generateContent(combinedQuery);
-                                const response = await result.response;
-                                answer = response.text();
-                                sourceInfo = 'gemini_with_rag';
-                                console.log("Successfully responded using Gemini with local RAG context");
-                            } catch (geminiError) {
-                                console.log("Gemini failed with RAG context, using RAG context directly...");
-                                sourceInfo = 'rag_context_only';
-                                // Generate answer from context directly
-                                answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
-                            }
-                        } else {
-                            // Use context directly
+                        try {
+                            const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+                            const result = await model.generateContent(combinedQuery);
+                            const response = await result.response;
+                            answer = response.text();
+                            sourceInfo = 'gemini_with_rag';
+                            console.log("Successfully responded using Gemini with local RAG context");
+                        } catch (geminiError) {
+                            console.log("Gemini failed with RAG context, using RAG context directly...");
                             sourceInfo = 'rag_context_only';
                             answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
-                            console.log("Responding using RAG context directly (no Gemini)");
                         }
+                    } else if (relevantDocs.length > 0) {
+                        // Use context directly without LLM
+                        sourceInfo = 'rag_context_only';
+                        const context = relevantDocs.map(doc => doc.text).join('\n\n');
+                        answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
+                        console.log("Responding using RAG context directly (no Claude or Gemini)");
                     } else {
-                        console.log("No relevant documents found in local RAG, using enhanced fallback...");
+                        console.log("No relevant documents found, using enhanced fallback...");
                         answer = getResponse(query);
                         sourceInfo = 'enhanced_fallback';
                     }
@@ -542,9 +811,9 @@ app.post('/api/chat', async (req, res) => {
                 }
             }
         }
-        // If Claude is not available, try local RAG with Gemini
+        // If Claude and OpenAI are not available, try local RAG with Gemini
         else {
-            console.log("Claude API not available, attempting to use local RAG system...");
+            console.log("Claude and OpenAI APIs not available, attempting to use local RAG system...");
             try {
                 const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
 
@@ -584,6 +853,13 @@ app.post('/api/chat', async (req, res) => {
             }
         }
 
+        // If the user requested Urdu translation, translate the answer
+        if (language && language.toLowerCase() === 'urdu') {
+            console.log("Translating response to Urdu...");
+            answer = await translateToUrdu(answer);
+            sourceInfo += '_with_urdu_translation'; // Update source info to indicate translation was applied
+        }
+
         console.log(`Responding with source: ${sourceInfo}`);
         res.json({
             success: true,
@@ -597,6 +873,149 @@ app.post('/api/chat', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Internal server error during chat processing.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// New protected route for book content
+app.get('/api/book-content', protect, async (req, res) => {
+    try {
+        console.log(`User ${req.user.email} accessed book content`);
+
+        // Return the knowledge base content for the book
+        res.json({
+            success: true,
+            message: 'Book content retrieved successfully',
+            data: {
+                user: {
+                    id: req.user.id,
+                    name: req.user.name,
+                    email: req.user.email
+                },
+                bookContent: {
+                    title: "Physical AI & Robotics",
+                    description: "Complete textbook on Physical AI, Robotics, ROS2, Digital Twins, AI Robot Brains, VLA models, and related topics",
+                    chapters: Object.keys(knowledgeBase).map(keyword => ({
+                        id: keyword,
+                        title: keyword,
+                        content: knowledgeBase[keyword],
+                        length: knowledgeBase[keyword].length
+                    })),
+                    totalChapters: Object.keys(knowledgeBase).length
+                },
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Error in book content API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during book content retrieval.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// New protected route for book modules/progress
+app.get('/api/book-progress', protect, async (req, res) => {
+    try {
+        // Find the user in the in-memory store
+        const user = Array.isArray(global.users)
+            ? global.users.find(u => u.id === req.user.id)
+            : users.find(u => u.id === req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                progress: {
+                    completedModules: user.completedModules || [],
+                    currentModule: user.currentModule || null,
+                    bookmarks: user.bookmarks || [],
+                    completedPercentage: user.completedModules ?
+                        Math.round((user.completedModules.length / Object.keys(knowledgeBase).length) * 100) : 0
+                },
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Error in book progress API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during progress retrieval.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// New protected route to update book progress
+app.put('/api/book-progress', protect, async (req, res) => {
+    try {
+        const { completedModule, bookmark, currentModule } = req.body;
+
+        // Find the user in the in-memory store
+        const userIndex = Array.isArray(global.users)
+            ? global.users.findIndex(u => u.id === req.user.id)
+            : users.findIndex(u => u.id === req.user.id);
+
+        if (userIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const userArray = Array.isArray(global.users) ? global.users : users;
+        const user = userArray[userIndex];
+
+        // Update user progress
+        if (completedModule && !user.completedModules.includes(completedModule)) {
+            user.completedModules.push(completedModule);
+        }
+
+        if (bookmark) {
+            // Add bookmark if it doesn't exist
+            const existingBookmark = user.bookmarks.find(b => b.chapter === bookmark.chapter);
+            if (existingBookmark) {
+                existingBookmark.page = bookmark.page;
+                existingBookmark.timestamp = bookmark.timestamp;
+            } else {
+                user.bookmarks.push(bookmark);
+            }
+        }
+
+        if (currentModule) {
+            user.currentModule = currentModule;
+        }
+
+        res.json({
+            success: true,
+            message: 'Progress updated successfully',
+            data: {
+                progress: {
+                    completedModules: user.completedModules,
+                    currentModule: user.currentModule,
+                    bookmarks: user.bookmarks,
+                    completedPercentage: Math.round((user.completedModules.length / Object.keys(knowledgeBase).length) * 100)
+                },
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Error in book progress update API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during progress update.',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
             timestamp: new Date().toISOString()
         });
@@ -644,7 +1063,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Database: PostgreSQL (Neon DB)`);
-  console.log("Chatbot ready (using Claude 3.5 Sonnet)");
+  console.log("Chatbot ready (supporting Claude 3.5 Sonnet, OpenAI GPT-4o, and Google Gemini)");
 });
 
 module.exports = app;

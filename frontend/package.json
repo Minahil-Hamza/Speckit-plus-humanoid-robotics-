@@ -1,0 +1,16 @@
+{
+  "name": "physical-ai-robotics-frontend",
+  "version": "1.0.0",
+  "description": "Interactive learning platform for Physical AI & Robotics",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve -s . -l 3000",
+    "dev": "npx serve -s . -l 3000"
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  },
+  "keywords": ["robotics", "ai", "education", "learning"],
+  "author": "Physical AI & Robotics Platform",
+  "license": "MIT"
+}

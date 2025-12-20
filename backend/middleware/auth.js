@@ -22,7 +22,12 @@ exports.protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-in-production');
 
     // Get user from in-memory storage
-    const user = global.users ? global.users.find(u => u.id === decoded.id) : null;
+    let userArray = global.users;
+    if (!userArray) {
+        // Fallback to local users variable if global is not set
+        userArray = typeof users !== 'undefined' ? users : null;
+    }
+    const user = userArray ? userArray.find(u => u.id === decoded.id) : null;
 
     if (!user) {
       return res.status(401).json({

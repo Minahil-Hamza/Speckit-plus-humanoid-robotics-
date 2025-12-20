@@ -366,11 +366,19 @@ async function loadChapters() {
 
                 // Add chapters
                 module.chapters.forEach((chapter, chapterIndex) => {
+                    // Add moduleId to chapter object
+                    chapter.moduleId = module.id;
+
                     const chapterItem = document.createElement('div');
                     chapterItem.className = 'chapter-item';
                     chapterItem.style.cssText = 'padding: 8px; margin: 5px 0; cursor: pointer; border-left: 2px solid transparent; transition: all 0.3s;';
+
+                    // Check if chapter is completed
+                    const isCompleted = bookProgress.completedChapters.includes(chapter.id);
+                    const checkmark = isCompleted ? '<span style="color: #00ff88; margin-right: 5px;">✓</span>' : '';
+
                     chapterItem.innerHTML = `
-                        <div style="font-weight: bold; color: #00ff88;">${chapter.title}</div>
+                        <div style="font-weight: bold; color: #00ff88;">${checkmark}${chapter.title}</div>
                         <div style="font-size: 11px; color: #666;">Reading time: ${chapter.readingTime || '15 min'}</div>
                     `;
                     chapterItem.onmouseenter = function() {
@@ -670,3 +678,217 @@ function addInteractiveEffects() {
 
 // Initialize interactive effects
 window.addEventListener('load', addInteractiveEffects);
+
+// Theme Toggle Functionality
+function toggleTheme() {
+    const body = document.body;
+    const sunIcon = document.getElementById('sunIcon');
+    const moonIcon = document.getElementById('moonIcon');
+
+    body.classList.toggle('light-mode');
+
+    // Toggle icons
+    if (body.classList.contains('light-mode')) {
+        sunIcon.style.display = 'none';
+        moonIcon.style.display = 'block';
+        localStorage.setItem('theme', 'light');
+    } else {
+        sunIcon.style.display = 'block';
+        moonIcon.style.display = 'none';
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
+// Load saved theme on page load
+function loadSavedTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const body = document.body;
+    const sunIcon = document.getElementById('sunIcon');
+    const moonIcon = document.getElementById('moonIcon');
+
+    if (savedTheme === 'light') {
+        body.classList.add('light-mode');
+        if (sunIcon && moonIcon) {
+            sunIcon.style.display = 'none';
+            moonIcon.style.display = 'block';
+        }
+    }
+}
+
+// Call on page load
+window.addEventListener('load', loadSavedTheme);
+
+// Progress tracking
+let bookProgress = {
+    completedChapters: [],
+    moduleProgress: {},
+    currentChapter: null,
+    startTime: Date.now(),
+    totalTimeSpent: 0
+};
+
+// Load progress from localStorage
+function loadProgress() {
+    const saved = localStorage.getItem('bookProgress');
+    if (saved) {
+        bookProgress = JSON.parse(saved);
+    }
+}
+
+// Save progress to localStorage
+function saveProgress() {
+    localStorage.setItem('bookProgress', JSON.stringify(bookProgress));
+}
+
+// Mark chapter as complete
+function markChapterComplete(chapterId, moduleId) {
+    if (!bookProgress.completedChapters.includes(chapterId)) {
+        bookProgress.completedChapters.push(chapterId);
+
+        // Update module progress
+        if (!bookProgress.moduleProgress[moduleId]) {
+            bookProgress.moduleProgress[moduleId] = { completed: 0, total: 0 };
+        }
+        bookProgress.moduleProgress[moduleId].completed++;
+
+        saveProgress();
+        updateDashboard();
+    }
+}
+
+// Select chapter and track as current
+function selectChapter(chapter) {
+    // Display chapter content
+    const bookContent = document.getElementById('bookContent');
+    const parsedContent = parseMarkdown(chapter.content);
+    bookContent.innerHTML = `
+        <div class="chapter-header">
+            <h1>${chapter.title}</h1>
+            <div class="chapter-meta">
+                <span>📖 ${chapter.readingTime}</span>
+                <button onclick="markChapterComplete('${chapter.id}', '${chapter.moduleId || 'unknown'}')" class="mark-complete-btn">
+                    ${bookProgress.completedChapters.includes(chapter.id) ? '✅ Completed' : '✓ Mark as Complete'}
+                </button>
+            </div>
+        </div>
+        <div class="chapter-content">${parsedContent}</div>
+    `;
+
+    // Track current chapter
+    bookProgress.currentChapter = chapter.id;
+    saveProgress();
+
+    // Scroll to top
+    bookContent.scrollTop = 0;
+}
+
+// Dashboard Functions
+function openDashboard() {
+    loadProgress();
+    updateDashboard();
+    document.getElementById('dashboardModal').style.display = 'flex';
+}
+
+function closeDashboard() {
+    document.getElementById('dashboardModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('dashboardModal');
+    if (e.target === modal) {
+        closeDashboard();
+    }
+});
+
+// Update dashboard with current progress
+async function updateDashboard() {
+    try {
+        // Fetch book content to get module structure
+        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-content` : `${API_BASE_URL}/book-content`;
+        const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
+        const response = await fetch(endpoint, { headers });
+        const data = await response.json();
+
+        if (!data.success) return;
+
+        const modules = data.data.bookContent.modules;
+        const totalChapters = modules.reduce((sum, m) => sum + m.chapters.length, 0);
+        const completedCount = bookProgress.completedChapters.length;
+        const percentage = Math.round((completedCount / totalChapters) * 100);
+
+        // Update progress circle
+        const circumference = 339.292;
+        const offset = circumference - (percentage / 100) * circumference;
+        document.getElementById('progressCircle').style.strokeDashoffset = offset;
+        document.getElementById('progressPercentage').textContent = `${percentage}%`;
+        document.getElementById('chaptersCompleted').textContent = `${completedCount} of ${totalChapters} chapters completed`;
+
+        // Update stats
+        const completedModules = modules.filter(m => {
+            const moduleChapters = m.chapters.map(c => c.id);
+            return moduleChapters.every(id => bookProgress.completedChapters.includes(id));
+        }).length;
+
+        document.getElementById('completedModules').textContent = completedModules;
+
+        // Find current reading
+        const currentChapter = bookProgress.currentChapter;
+        if (currentChapter) {
+            let currentTitle = 'Unknown';
+            modules.forEach(m => {
+                const chapter = m.chapters.find(c => c.id === currentChapter);
+                if (chapter) currentTitle = chapter.title.substring(0, 20) + '...';
+            });
+            document.getElementById('currentReading').textContent = currentTitle;
+        }
+
+        // Calculate time spent (simplified)
+        const hours = Math.floor((Date.now() - bookProgress.startTime) / (1000 * 60 * 60));
+        document.getElementById('timeSpent').textContent = hours + 'h';
+
+        // Update module progress list
+        const moduleList = document.getElementById('moduleProgressList');
+        moduleList.innerHTML = '';
+
+        modules.forEach((module, index) => {
+            const moduleChapters = module.chapters;
+            const completedInModule = moduleChapters.filter(c =>
+                bookProgress.completedChapters.includes(c.id)
+            ).length;
+            const modulePercentage = Math.round((completedInModule / moduleChapters.length) * 100);
+
+            let status = 'not-started';
+            let statusText = 'Not Started';
+            if (modulePercentage === 100) {
+                status = 'completed';
+                statusText = 'Completed';
+            } else if (modulePercentage > 0) {
+                status = 'in-progress';
+                statusText = 'In Progress';
+            }
+
+            const moduleItem = document.createElement('div');
+            moduleItem.className = 'module-progress-item';
+            moduleItem.innerHTML = `
+                <div class="module-title">
+                    <h4>${module.title}</h4>
+                    <div class="module-status">
+                        <span class="status-badge status-${status}">${statusText}</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${modulePercentage}%"></div>
+                </div>
+                <div class="chapter-count">${completedInModule} / ${moduleChapters.length} chapters completed</div>
+            `;
+            moduleList.appendChild(moduleItem);
+        });
+
+    } catch (error) {
+        console.error('Error updating dashboard:', error);
+    }
+}
+
+// Initialize progress tracking
+loadProgress();

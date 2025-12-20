@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'https://backend-gcmdk8gxc-minahil-hamzas-projects.vercel.app/api';
+const API_BASE_URL = 'https://backend-kgoj80t16-minahil-hamzas-projects.vercel.app/api';
 
 // Global variables
 let currentUser = null;

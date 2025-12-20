@@ -879,12 +879,15 @@ app.post('/api/chat', protect, async (req, res) => {
     }
 });
 
+// Import modular book content
+const structuredBookContent = require('./book_content');
+
 // New protected route for book content
 app.get('/api/book-content', protect, async (req, res) => {
     try {
         console.log(`User ${req.user.email} accessed book content`);
 
-        // Return the knowledge base content for the book
+        // Return the structured modular book content
         res.json({
             success: true,
             message: 'Book content retrieved successfully',
@@ -894,17 +897,7 @@ app.get('/api/book-content', protect, async (req, res) => {
                     name: req.user.name,
                     email: req.user.email
                 },
-                bookContent: {
-                    title: "Physical AI & Robotics",
-                    description: "Complete textbook on Physical AI, Robotics, ROS2, Digital Twins, AI Robot Brains, VLA models, and related topics",
-                    chapters: Object.keys(knowledgeBase).map(keyword => ({
-                        id: keyword,
-                        title: keyword,
-                        content: knowledgeBase[keyword],
-                        length: knowledgeBase[keyword].length
-                    })),
-                    totalChapters: Object.keys(knowledgeBase).length
-                },
+                bookContent: structuredBookContent,
                 timestamp: new Date().toISOString()
             }
         });

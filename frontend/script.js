@@ -297,7 +297,7 @@ async function loadBookContent() {
     }
 }
 
-// Load chapters list
+// Load chapters list (now with modules)
 async function loadChapters() {
     try {
         const response = await fetch(`${API_BASE_URL}/book-content`, {
@@ -305,19 +305,72 @@ async function loadChapters() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             const chaptersList = document.getElementById('chaptersList');
             chaptersList.innerHTML = '';
-            
-            data.data.bookContent.chapters.forEach((chapter, index) => {
-                const chapterItem = document.createElement('div');
-                chapterItem.className = 'chapter-item';
-                chapterItem.textContent = `${index + 1}. ${chapter.title}`;
-                chapterItem.onclick = () => selectChapter(chapter);
-                chaptersList.appendChild(chapterItem);
+
+            // Display book title
+            const bookTitle = document.createElement('h3');
+            bookTitle.textContent = data.data.bookContent.title;
+            bookTitle.style.cssText = 'color: #00ffff; margin-bottom: 20px; text-align: center;';
+            chaptersList.appendChild(bookTitle);
+
+            // Display modules and chapters
+            data.data.bookContent.modules.forEach((module, moduleIndex) => {
+                // Module header
+                const moduleHeader = document.createElement('div');
+                moduleHeader.className = 'module-header';
+                moduleHeader.style.cssText = 'background: rgba(0, 255, 255, 0.1); padding: 10px; margin: 10px 0; border-left: 3px solid #00ffff; cursor: pointer;';
+                moduleHeader.textContent = module.title;
+
+                // Module description
+                const moduleDesc = document.createElement('div');
+                moduleDesc.style.cssText = 'font-size: 12px; color: #888; margin-left: 10px;';
+                moduleDesc.textContent = module.description;
+                moduleHeader.appendChild(moduleDesc);
+
+                // Chapters container (initially hidden)
+                const chaptersContainer = document.createElement('div');
+                chaptersContainer.className = 'chapters-container';
+                chaptersContainer.style.cssText = 'display: none; margin-left: 20px;';
+
+                // Add chapters
+                module.chapters.forEach((chapter, chapterIndex) => {
+                    const chapterItem = document.createElement('div');
+                    chapterItem.className = 'chapter-item';
+                    chapterItem.style.cssText = 'padding: 8px; margin: 5px 0; cursor: pointer; border-left: 2px solid transparent; transition: all 0.3s;';
+                    chapterItem.innerHTML = `
+                        <div style="font-weight: bold; color: #00ff88;">${chapter.title}</div>
+                        <div style="font-size: 11px; color: #666;">Reading time: ${chapter.readingTime || '15 min'}</div>
+                    `;
+                    chapterItem.onmouseenter = function() {
+                        this.style.borderLeft = '2px solid #00ffff';
+                        this.style.backgroundColor = 'rgba(0, 255, 255, 0.05)';
+                    };
+                    chapterItem.onmouseleave = function() {
+                        this.style.borderLeft = '2px solid transparent';
+                        this.style.backgroundColor = 'transparent';
+                    };
+                    chapterItem.onclick = () => selectChapter(chapter);
+                    chaptersContainer.appendChild(chapterItem);
+                });
+
+                // Toggle chapters visibility on module click
+                moduleHeader.onclick = () => {
+                    if (chaptersContainer.style.display === 'none') {
+                        chaptersContainer.style.display = 'block';
+                        moduleHeader.style.background = 'rgba(0, 255, 255, 0.2)';
+                    } else {
+                        chaptersContainer.style.display = 'none';
+                        moduleHeader.style.background = 'rgba(0, 255, 255, 0.1)';
+                    }
+                };
+
+                chaptersList.appendChild(moduleHeader);
+                chaptersList.appendChild(chaptersContainer);
             });
         } else {
             console.error('Failed to load chapters:', data.message);
@@ -327,25 +380,72 @@ async function loadChapters() {
     }
 }
 
+// Simple markdown parser for chapter content
+function parseMarkdown(text) {
+    // Headers
+    text = text.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    text = text.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    text = text.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+    // Bold
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Code blocks
+    text = text.replace(/```(\w+)?\n([\s\S]+?)```/g, '<pre><code>$2</code></pre>');
+
+    // Inline code
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Lists
+    text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
+    text = text.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+    // Paragraphs
+    text = text.replace(/^(?!<[hul]|```|<pre)(.+)$/gm, '<p>$1</p>');
+
+    return text;
+}
+
 // Select a chapter to display
 async function selectChapter(chapter) {
     currentChapter = chapter;
-    
+
     const bookContent = document.getElementById('bookContent');
+
+    // Parse markdown content
+    const htmlContent = parseMarkdown(chapter.content);
+
     bookContent.innerHTML = `
-        <h2>${chapter.title}</h2>
-        <div class="chapter-content">
-            <p>${chapter.content}</p>
+        <div style="margin-bottom: 20px;">
+            <h2 style="color: #00ffff; margin-bottom: 10px;">${chapter.title}</h2>
+            <div style="color: #888; font-size: 14px; margin-bottom: 20px;">
+                <span>📚 Reading time: ${chapter.readingTime || '15 min'}</span>
+                ${chapter.keywords ? `<span style="margin-left: 20px;">🏷️ ${chapter.keywords.join(', ')}</span>` : ''}
+            </div>
         </div>
-        <div class="chapter-info">
-            <p><strong>Length:</strong> ${chapter.length} characters</p>
-            <p><strong>Keywords:</strong> ${chapter.id}</p>
+        <div class="chapter-content" style="line-height: 1.8; color: #ddd;">
+            ${htmlContent}
         </div>
     `;
-    
+
+    // Style code blocks
+    const codeBlocks = bookContent.querySelectorAll('pre code');
+    codeBlocks.forEach(block => {
+        block.style.cssText = 'background: rgba(0, 255, 255, 0.1); padding: 15px; border-radius: 5px; display: block; overflow-x: auto; color: #00ff88;';
+        block.parentElement.style.cssText = 'background: rgba(0, 0, 0, 0.3); margin: 10px 0; border-left: 3px solid #00ffff;';
+    });
+
+    // Style inline code
+    const inlineCodes = bookContent.querySelectorAll('code');
+    inlineCodes.forEach(code => {
+        if (!code.parentElement.tagName === 'PRE') {
+            code.style.cssText = 'background: rgba(0, 255, 255, 0.2); padding: 2px 6px; border-radius: 3px; color: #00ffff; font-family: monospace;';
+        }
+    });
+
     // Mark chapter as viewed/started
     await updateProgress({ currentModule: chapter.id });
-    
+
     // Scroll to top of content
     bookContent.scrollIntoView({ behavior: 'smooth' });
 }

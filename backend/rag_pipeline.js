@@ -14,8 +14,8 @@ if (!API_KEY) {
     process.exit(1);
 }
 
-const genAI = new GoogleGenerativeAI(API_KEY);
-const embeddingModel = genAI.getGenerativeModel({ model: "embedding-001" }); // Specific embedding model
+const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
+const embeddingModel = genAI ? genAI.getGenerativeModel({ model: "embedding-001" }) : null;
 
 let documentStore = []; // In-memory store for { text, embedding, metadata }
 
@@ -98,8 +98,11 @@ async function retrieveRelevantDocuments(query, topK = 3) {
 
 // Function to initialize the RAG pipeline by loading all documents
 async function initializeRagPipeline() {
+    if (!embeddingModel) {
+        console.log("RAG pipeline initialization skipped: GEMINI_API_KEY not set.");
+        return;
+    }
     console.log("Initializing RAG pipeline...");
-    documentStore = []; // Clear previous store if any
 
     const docFiles = [
         // List all your markdown/mdx files here

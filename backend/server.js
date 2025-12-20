@@ -32,28 +32,35 @@ const anthropic = CLAUDE_API_KEY ? new Anthropic({ apiKey: CLAUDE_API_KEY }) : n
 const gemini = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 
-// Import RAG pipeline if API keys are available
-let ragPipeline = null;
-if (GEMINI_API_KEY) {
-    try {
-        ragPipeline = require('./rag_pipeline');
-    } catch (error) {
-        console.log("RAG Pipeline not available:", error.message);
-    }
-}
+// let ragPipeline = null;
+// if (GEMINI_API_KEY) {
+//     try {
+//         ragPipeline = require('./rag_pipeline');
+//         ragPipeline.initializeRagPipeline()
+//             .then(() => {
+//                 console.log("RAG pipeline initialized successfully");
+//             })
+//             .catch(error => {
+//                 console.error("Failed to initialize RAG pipeline:", error);
+//             });
+//     } catch (error) {
+//         console.log("RAG Pipeline not available:
+// ", error.message);
+//     }
+// }
 
 // Import local RAG system (doesn't require external APIs)
-try {
-    const localRAG = require('./local_rag');
-    global.localRAG = localRAG; // Make available globally to handle any scope issues
-} catch (error) {
-    console.log("Local RAG system not available:", error.message);
-    // Create a mock localRAG to prevent failures
-    global.localRAG = {
-        initializeLocalRAG: async () => { console.log("Local RAG not available, using fallback"); return Promise.resolve(); },
-        retrieveRelevantDocuments: (query, k) => { console.log("Local RAG not available"); return []; }
-    };
-}
+// try {
+//     const localRAG = require('./local_rag');
+//     global.localRAG = localRAG; // Make available globally to handle any scope issues
+// } catch (error) {
+//     console.log("Local RAG system not available:", error.message);
+//     // Create a mock localRAG to prevent failures
+//     global.localRAG = {
+//         initializeLocalRAG: async () => { console.log("Local RAG not available, using fallback"); return Promise.resolve(); },
+//         retrieveRelevantDocuments: (query, k) => { console.log("Local RAG not available"); return []; }
+//     };
+// }
 
 // Middleware
 app.use(express.json());
@@ -441,29 +448,20 @@ function getResponse(query) {
     return `I'm a chatbot assistant for the Physical AI & Robotics textbook. I can help answer questions about:\n\n• ROS2 (Robot Operating System 2)\n• Robotics Simulation (Gazebo, Unity, Isaac Sim)\n• Digital Twins\n• AI Robot Brain concepts\n• Vision-Language-Action (VLA) models\n• NVIDIA Isaac ROS\n• Navigation (Nav2)\n• URDF robot descriptions\n• Humanoid Robotics\n• Control Systems\n• Perception Systems\n• Machine Learning in Robotics\n\nYour question: "${query}"\n\nPlease try asking about specific topics like "What is ROS2?" or "Explain Digital Twin". If the AI API is unavailable, I use a comprehensive knowledge base with over 300 robotics concepts to assist you.`;
 }
 
-// Initialize RAG pipeline if available
-if (ragPipeline) {
-    ragPipeline.initializeRagPipeline()
-        .then(() => {
-            console.log("RAG pipeline initialized successfully");
-        })
-        .catch(error => {
-            console.error("Failed to initialize RAG pipeline:", error);
-        });
-}
+
 
 // Initialize local RAG system
-if (global.localRAG) {
-    global.localRAG.initializeLocalRAG()
-        .then(() => {
-            console.log("Local RAG system initialized successfully");
-        })
-        .catch(error => {
-            console.error("Failed to initialize local RAG system:", error);
-        });
-} else {
-    console.log("Local RAG system not available");
-}
+// if (global.localRAG) {
+//     global.localRAG.initializeLocalRAG()
+//         .then(() => {
+//             console.log("Local RAG system initialized successfully");
+//         })
+//         .catch(error => {
+//             console.error("Failed to initialize local RAG system:", error);
+//         });
+// } else {
+//     console.log("Local RAG system not available");
+// }
 
 // Function to translate text to Urdu
 async function translateToUrdu(text, aiProvider = null) {
@@ -682,29 +680,7 @@ app.post('/api/chat', protect, async (req, res) => {
         let answer = '';
         let sourceInfo = 'fallback';
 
-        // Try Claude API first if available
-        if (anthropic) {
-            console.log("Attempting to use Claude API...");
-            try {
-                const message = await anthropic.messages.create({
-                    model: "claude-3-5-sonnet-20241022",
-                    max_tokens: 1024,
-                    system: "You are a helpful AI assistant for a Physical AI & Robotics course. Help students understand concepts related to ROS2, robotics simulation, digital twins, AI robot brains, vision-language-action models, and related topics. Provide clear, concise explanations based on the context provided. Always be accurate, educational, and encourage deeper learning.",
-                    messages: [
-                        {
-                            role: "user",
-                            content: query
-                        }
-                    ]
-                });
-
-                answer = message.content[0].text;
-                sourceInfo = 'claude';
-                console.log("Successfully responded using Claude API");
-            } catch (claudeError) {
-                console.error("Claude API failed:", claudeError.message || claudeError);
-
-                // Try OpenAI API if Claude failed
+                // Try OpenAI API first if available
                 if (openai) {
                     console.log("Attempting to use OpenAI API...");
                     try {
@@ -723,23 +699,112 @@ app.post('/api/chat', protect, async (req, res) => {
                             max_tokens: 1024,
                             temperature: 0.7,
                         });
-
+        
                         answer = chatCompletion.choices[0].message.content;
                         sourceInfo = 'openai';
                         console.log("Successfully responded using OpenAI API");
                     } catch (openaiError) {
                         console.error("OpenAI API failed:", openaiError.message || openaiError);
-
-                        // Try local RAG system for document retrieval
+        
+                        // Try Claude API if OpenAI failed
+                        if (anthropic) {
+                            console.log("Attempting to use Claude API...");
+                            try {
+                                const message = await anthropic.messages.create({
+                                    model: "claude-3-5-sonnet-20241022",
+                                    max_tokens: 1024,
+                                    system: "You are a helpful AI assistant for a Physical AI & Robotics course. Help students understand concepts related to ROS2, robotics simulation, digital twins, AI robot brains, vision-language-action models, and related topics. Provide clear, concise explanations based on the context provided. Always be accurate, educational, and encourage deeper learning.",
+                                    messages: [
+                                        {
+                                            role: "user",
+                                            content: query
+                                        }
+                                    ]
+                                });
+        
+                                answer = message.content[0].text;
+                                sourceInfo = 'claude';
+                                console.log("Successfully responded using Claude API");
+                            } catch (claudeError) {
+                                console.error("Claude API failed:", claudeError.message || claudeError);
+                                // Fallback to RAG
+                                try {
+                                    console.log("Attempting to use local RAG system...");
+                                    const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
+        
+                                    if (relevantDocs.length > 0) {
+                                        console.log(`Found ${relevantDocs.length} relevant documents from local RAG`);
+                                        const context = relevantDocs.map(doc => doc.text).join('\n\n');
+                                        const combinedQuery = `Based on the following context from a Physical AI & Robotics textbook, please answer the question. If the context doesn't contain enough information, say so.\n\nContext:\n${context}\n\nQuestion: ${query}\n\nAnswer:`;
+        
+                                        // Try Gemini if available
+                                        if (gemini) {
+                                            try {
+                                                console.log("Attempting to use Gemini with local RAG context...");
+                                                const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+                                                const result = await model.generateContent(combinedQuery);
+                                                const response = await result.response;
+                                                answer = response.text();
+                                                sourceInfo = 'gemini_with_rag';
+                                                console.log("Successfully responded using Gemini with local RAG context");
+                                            } catch (geminiError) {
+                                                console.log("Gemini failed with RAG context, using RAG context directly...");
+                                                sourceInfo = 'rag_context_only';
+                                                // Generate answer from context directly
+                                                answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
+                                            }
+                                        } else {
+                                            // Use context directly
+                                            sourceInfo = 'rag_context_only';
+                                            answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
+                                            console.log("Responding using RAG context directly (no Gemini)");
+                                        }
+                                    } else {
+                                        console.log("No relevant documents found in local RAG, using enhanced fallback...");
+                                        answer = getResponse(query);
+                                        sourceInfo = 'enhanced_fallback';
+                                    }
+                                } catch (ragError) {
+                                    console.error("Local RAG failed:", ragError.message);
+                                    console.error("Stack trace:", ragError.stack);
+                                    answer = getResponse(query);
+                                    sourceInfo = 'enhanced_fallback_after_rag_error';
+                                }
+                            }
+                        }
+                    }
+                }
+                // If OpenAI is not available, try Claude API first
+                else if (anthropic) {
+                    console.log("Attempting to use Claude API...");
+                    try {
+                        const message = await anthropic.messages.create({
+                            model: "claude-3-5-sonnet-20241022",
+                            max_tokens: 1024,
+                            system: "You are a helpful AI assistant for a Physical AI & Robotics course. Help students understand concepts related to ROS2, robotics simulation, digital twins, AI robot brains, vision-language-action models, and related topics. Provide clear, concise explanations based on the context provided. Always be accurate, educational, and encourage deeper learning.",
+                            messages: [
+                                {
+                                    role: "user",
+                                    content: query
+                                }
+                            ]
+                        });
+        
+                        answer = message.content[0].text;
+                        sourceInfo = 'claude';
+                        console.log("Successfully responded using Claude API");
+                    } catch (claudeError) {
+                        console.error("Claude API failed:", claudeError.message || claudeError);
+                        // Fallback to RAG
                         try {
                             console.log("Attempting to use local RAG system...");
                             const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
-
+        
                             if (relevantDocs.length > 0) {
                                 console.log(`Found ${relevantDocs.length} relevant documents from local RAG`);
                                 const context = relevantDocs.map(doc => doc.text).join('\n\n');
                                 const combinedQuery = `Based on the following context from a Physical AI & Robotics textbook, please answer the question. If the context doesn't contain enough information, say so.\n\nContext:\n${context}\n\nQuestion: ${query}\n\nAnswer:`;
-
+        
                                 // Try Gemini if available
                                 if (gemini) {
                                     try {
@@ -774,123 +839,9 @@ app.post('/api/chat', protect, async (req, res) => {
                             sourceInfo = 'enhanced_fallback_after_rag_error';
                         }
                     }
-                } else {
-                    // If OpenAI is not available, try local RAG system for document retrieval
-                    try {
-                        console.log("Attempting to use local RAG system...");
-                        const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
-
-                        if (relevantDocs.length > 0) {
-                            console.log(`Found ${relevantDocs.length} relevant documents from local RAG`);
-                            const context = relevantDocs.map(doc => doc.text).join('\n\n');
-                            const combinedQuery = `Based on the following context from a Physical AI & Robotics textbook, please answer the question. If the context doesn't contain enough information, say so.\n\nContext:\n${context}\n\nQuestion: ${query}\n\nAnswer:`;
-
-                            // Try Gemini if available
-                            if (gemini) {
-                                try {
-                                    console.log("Attempting to use Gemini with local RAG context...");
-                                    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-                                    const result = await model.generateContent(combinedQuery);
-                                    const response = await result.response;
-                                    answer = response.text();
-                                    sourceInfo = 'gemini_with_rag';
-                                    console.log("Successfully responded using Gemini with local RAG context");
-                                } catch (geminiError) {
-                                    console.log("Gemini failed with RAG context, using RAG context directly...");
-                                    sourceInfo = 'rag_context_only';
-                                    // Generate answer from context directly
-                                    answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
-                                }
-                            } else {
-                                // Use context directly
-                                sourceInfo = 'rag_context_only';
-                                answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
-                                console.log("Responding using RAG context directly (no Gemini)");
-                            }
-                        } else {
-                            console.log("No relevant documents found in local RAG, using enhanced fallback...");
-                            answer = getResponse(query);
-                            sourceInfo = 'enhanced_fallback';
-                        }
-                    } catch (ragError) {
-                        console.error("Local RAG failed:", ragError.message);
-                        console.error("Stack trace:", ragError.stack);
-                        answer = getResponse(query);
-                        sourceInfo = 'enhanced_fallback_after_rag_error';
-                    }
                 }
-            }
-        }
-        // If Claude is not available, try OpenAI first, then fall back to the original flow
-        else if (openai) {
-            console.log("Claude API not available, attempting to use OpenAI API...");
-            try {
-                const chatCompletion = await openai.chat.completions.create({
-                    model: "gpt-4o", // Using gpt-4o for better performance and cost
-                    messages: [
-                        {
-                            role: "system",
-                            content: "You are a helpful AI assistant for a Physical AI & Robotics course. Help students understand concepts related to ROS2, robotics simulation, digital twins, AI robot brains, vision-language-action models, and related topics. Provide clear, concise explanations based on the context provided. Always be accurate, educational, and encourage deeper learning."
-                        },
-                        {
-                            role: "user",
-                            content: query
-                        }
-                    ],
-                    max_tokens: 1024,
-                    temperature: 0.7,
-                });
-
-                answer = chatCompletion.choices[0].message.content;
-                sourceInfo = 'openai';
-                console.log("Successfully responded using OpenAI API");
-            } catch (openaiError) {
-                console.error("OpenAI API failed:", openaiError.message || openaiError);
-
-                // Fall back to the original logic with Gemini and RAG
-                console.log("OpenAI API not available, attempting to use local RAG system...");
-                try {
-                    const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
-
-                    if (relevantDocs.length > 0 && gemini) {
-                        console.log(`Found ${relevantDocs.length} relevant documents from local RAG, attempting to use with Gemini...`);
-                        const context = relevantDocs.map(doc => doc.text).join('\n\n');
-                        const combinedQuery = `Based on the following context from a Physical AI & Robotics textbook, please answer the question. If the context doesn't contain enough information, say so.\n\nContext:\n${context}\n\nQuestion: ${query}\n\nAnswer:`;
-
-                        try {
-                            const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-                            const result = await model.generateContent(combinedQuery);
-                            const response = await result.response;
-                            answer = response.text();
-                            sourceInfo = 'gemini_with_rag';
-                            console.log("Successfully responded using Gemini with local RAG context");
-                        } catch (geminiError) {
-                            console.log("Gemini failed with RAG context, using RAG context directly...");
-                            sourceInfo = 'rag_context_only';
-                            answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
-                        }
-                    } else if (relevantDocs.length > 0) {
-                        // Use context directly without LLM
-                        sourceInfo = 'rag_context_only';
-                        const context = relevantDocs.map(doc => doc.text).join('\n\n');
-                        answer = `Based on the Physical AI & Robotics textbook:\n\n${context.substring(0, 1500)}...\n\nSources: ${relevantDocs.map(d => d.metadata.source).join(', ')}`;
-                        console.log("Responding using RAG context directly (no Claude or Gemini)");
-                    } else {
-                        console.log("No relevant documents found, using enhanced fallback...");
-                        answer = getResponse(query);
-                        sourceInfo = 'enhanced_fallback';
-                    }
-                } catch (ragError) {
-                    console.error("Local RAG failed:", ragError.message);
-                    console.error("Stack trace:", ragError.stack);
-                    answer = getResponse(query);
-                    sourceInfo = 'enhanced_fallback_after_rag_error';
-                }
-            }
-        }
-        // If Claude and OpenAI are not available, try local RAG with Gemini
-        else {
-            console.log("Claude and OpenAI APIs not available, attempting to use local RAG system...");
+                // If Claude and OpenAI are not available, try local RAG with Gemini
+                else {            console.log("Claude and OpenAI APIs not available, attempting to use local RAG system...");
             try {
                 const relevantDocs = global.localRAG ? global.localRAG.retrieveRelevantDocuments(query, 3) : [];
 
@@ -1120,6 +1071,7 @@ app.put('/api/book-progress', protect, async (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+  console.log('Health check endpoint hit');
   res.json({ status: 'OK', message: 'Server is running', database: 'PostgreSQL (Neon DB)' });
 });
 
@@ -1153,7 +1105,7 @@ process.on('SIGTERM', async () => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

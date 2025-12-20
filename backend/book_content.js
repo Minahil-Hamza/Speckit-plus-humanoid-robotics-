@@ -821,6 +821,175 @@ class PointCloudProcessor(Node):
 3D perception is essential for robots operating in complex, dynamic environments.`,
                     readingTime: "18 min",
                     keywords: ["point cloud", "3d perception", "lidar", "pcl", "depth sensing"]
+                },
+                {
+                    id: "chapter-4-3",
+                    title: "Chapter 3: Advanced Perception Techniques",
+                    content: `# Advanced Perception Techniques
+
+Modern robotics leverages advanced AI-powered perception for robust scene understanding.
+
+## Object Detection and Recognition
+
+**YOLO (You Only Look Once)**: Real-time object detection.
+
+\`\`\`python
+from ultralytics import YOLO
+import cv2
+
+# Load model
+model = YOLO('yolov8n.pt')
+
+# Run inference
+results = model('robot_view.jpg')
+
+# Process results
+for result in results:
+    boxes = result.boxes
+    for box in boxes:
+        class_id = int(box.cls[0])
+        confidence = float(box.conf[0])
+        x1, y1, x2, y2 = box.xyxy[0]
+        print(f"Detected {model.names[class_id]} with {confidence:.2f} confidence")
+\`\`\`
+
+**R-CNN Family**: Region-based detection for higher accuracy.
+
+**SSD (Single Shot Detector)**: Balance speed and accuracy.
+
+## Semantic Segmentation
+
+Classify each pixel in an image.
+
+**DeepLab**: Atrous convolution for semantic segmentation.
+
+**U-Net**: Encoder-decoder architecture for dense prediction.
+
+**Mask R-CNN**: Instance segmentation (separate individual objects).
+
+\`\`\`python
+import torch
+from torchvision.models.segmentation import deeplabv3_resnet101
+
+# Load pre-trained model
+model = deeplabv3_resnet101(pretrained=True)
+model.eval()
+
+# Process image
+input_tensor = preprocess(image)
+output = model(input_tensor)['out'][0]
+predictions = output.argmax(0)
+\`\`\`
+
+## Depth Estimation
+
+Estimate depth from single images or stereo pairs.
+
+**Monocular Depth Estimation**:
+- MiDaS (Mixed Data Sampling)
+- DPT (Dense Prediction Transformer)
+- ZoeDepth
+
+\`\`\`python
+import torch
+from transformers import DPTImageProcessor, DPTForDepthEstimation
+
+processor = DPTImageProcessor.from_pretrained("Intel/dpt-large")
+model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large")
+
+# Prepare image
+inputs = processor(images=image, return_tensors="pt")
+
+# Predict depth
+with torch.no_grad():
+    outputs = model(**inputs)
+    predicted_depth = outputs.predicted_depth
+\`\`\`
+
+**Stereo Vision**: Triangulate depth from two cameras.
+
+## Visual SLAM
+
+Simultaneous Localization and Mapping using cameras.
+
+**ORB-SLAM3**: Feature-based SLAM for monocular, stereo, and RGB-D cameras.
+
+**LSD-SLAM**: Direct method using photometric error.
+
+**RTAB-Map**: RGB-D SLAM with loop closure detection.
+
+## Sensor Fusion
+
+Combine multiple sensors for robust perception.
+
+**Extended Kalman Filter (EKF)**:
+\`\`\`python
+class RobotEKF:
+    def __init__(self):
+        self.state = np.zeros(6)  # [x, y, theta, vx, vy, vtheta]
+        self.covariance = np.eye(6)
+
+    def predict(self, control, dt):
+        # Prediction step
+        self.state = self.motion_model(self.state, control, dt)
+        self.covariance = self.predict_covariance(dt)
+
+    def update(self, measurement, sensor_type):
+        # Update step
+        innovation = measurement - self.observation_model(self.state)
+        kalman_gain = self.compute_kalman_gain(sensor_type)
+        self.state += kalman_gain @ innovation
+        self.covariance = self.update_covariance(kalman_gain)
+\`\`\`
+
+**Particle Filter**: Non-parametric state estimation.
+
+**Sensor Fusion Architectures**:
+- Early fusion (combine raw data)
+- Late fusion (combine processed results)
+- Deep fusion (learn fusion with neural networks)
+
+## Attention Mechanisms
+
+Focus on relevant image regions.
+
+**Visual Attention**: Learn which parts of image matter most.
+
+**Transformer-based**: Vision Transformers (ViT) for image understanding.
+
+\`\`\`python
+from transformers import ViTForImageClassification
+
+model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224')
+
+# Process with attention
+outputs = model(pixel_values, output_attentions=True)
+attentions = outputs.attentions  # Attention weights for each layer
+\`\`\`
+
+## Active Perception
+
+Robots actively control sensors to improve perception.
+
+**Strategies**:
+- Move camera for better viewpoint
+- Adjust focus or zoom
+- Scan environment systematically
+- Explore uncertain areas
+
+## Multi-Modal Perception
+
+Combine vision with other modalities.
+
+**Vision + Touch**: Tactile sensors for manipulation.
+
+**Vision + Audio**: Sound source localization.
+
+**Vision + LiDAR**: Robust outdoor perception.
+
+Advanced perception techniques enable robots to understand complex, dynamic environments with high reliability.`,
+                    readingTime: "20 min",
+                    keywords: ["yolo", "semantic segmentation", "depth estimation", "sensor fusion", "slam"]
                 }
             ]
         },
@@ -1037,6 +1206,224 @@ class VLAModel(nn.Module):
 VLA models represent the cutting edge of robot learning, enabling more natural and capable human-robot interaction.`,
                     readingTime: "20 min",
                     keywords: ["vla", "vision language action", "transformer", "multimodal"]
+                },
+                {
+                    id: "chapter-5-3",
+                    title: "Chapter 3: Foundation Models in Robotics",
+                    content: `# Foundation Models in Robotics
+
+Foundation models are large-scale pre-trained AI models adapted for robotic tasks, bringing powerful capabilities to physical AI.
+
+## What are Foundation Models?
+
+**Definition**: Large neural networks pre-trained on diverse datasets that can be fine-tuned for specific tasks.
+
+**Characteristics**:
+- Billions of parameters
+- Pre-trained on internet-scale data
+- General-purpose capabilities
+- Transfer learning to new domains
+
+## Vision Foundation Models
+
+**CLIP (Contrastive Language-Image Pre-training)**: Joint vision-language understanding.
+
+\`\`\`python
+import torch
+import clip
+from PIL import Image
+
+# Load CLIP model
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model, preprocess = clip.load("ViT-B/32", device=device)
+
+# Encode image
+image = preprocess(Image.open("robot_scene.jpg")).unsqueeze(0).to(device)
+image_features = model.encode_image(image)
+
+# Encode text
+text_options = ["a red cube", "a blue ball", "a green cylinder"]
+text = clip.tokenize(text_options).to(device)
+text_features = model.encode_text(text)
+
+# Calculate similarity
+similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+print(f"Object detected: {text_options[similarity.argmax()]}")
+\`\`\`
+
+**DINOv2**: Self-supervised vision features.
+
+**SAM (Segment Anything Model)**: Universal segmentation.
+
+## Language Foundation Models
+
+**GPT Family**: Text generation and understanding.
+
+**LLaMA**: Open-source large language model.
+
+**PaLM**: Pathways Language Model by Google.
+
+**Robot Integration**:
+\`\`\`python
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+# Load LLM
+tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
+
+# Task decomposition
+prompt = """Break down this task into robot actions:
+'Go to the kitchen, pick up the red mug, and bring it to the living room table.'"""
+
+inputs = tokenizer(prompt, return_tensors="pt")
+outputs = model.generate(**inputs, max_length=200)
+plan = tokenizer.decode(outputs[0])
+print(plan)
+\`\`\`
+
+## Multimodal Foundation Models
+
+**GPT-4V**: Vision and language understanding.
+
+**Gemini**: Google's multimodal model.
+
+**LLaVA**: Large Language and Vision Assistant.
+
+**RT-2**: Robotics Transformer with vision-language pre-training.
+
+## Code as Policies
+
+Use foundation models to generate robot code.
+
+\`\`\`python
+class CodeAsPolicy:
+    def __init__(self, llm_model):
+        self.llm = llm_model
+        self.robot_api = RobotAPI()
+
+    def execute_instruction(self, natural_language_command):
+        prompt = f"""
+Generate Python code using the robot API to execute: {natural_language_command}
+
+Available functions:
+- robot.move_to(x, y, z)
+- robot.grasp_object(object_name)
+- robot.place_object(location)
+- robot.open_gripper()
+- robot.close_gripper()
+
+Code:
+"""
+        # Generate code with LLM
+        generated_code = self.llm.generate(prompt)
+
+        # Execute generated code
+        exec(generated_code, {"robot": self.robot_api})
+
+# Usage
+policy = CodeAsPolicy(llm_model)
+policy.execute_instruction("pick up the blue block and stack it on the red block")
+\`\`\`
+
+## Embodied AI with Foundation Models
+
+**PaLM-E (Embodied)**: 562B parameters combining PaLM with robotic control.
+
+**RT-X**: Cross-embodiment data for robot learning.
+
+**OpenVLA**: Open-source VLA using foundation models.
+
+\`\`\`python
+from transformers import AutoModel
+
+# Load embodied AI model
+model = AutoModel.from_pretrained("openvla/openvla-7b")
+
+# Process multimodal input
+robot_observation = {
+    "image": camera_image,
+    "language": "pick up the apple",
+    "proprioception": robot_joint_states
+}
+
+# Generate action
+action = model(robot_observation)
+robot.execute_action(action)
+\`\`\`
+
+## Prompt Engineering for Robotics
+
+Crafting effective prompts for robot control.
+
+**Chain-of-Thought Prompting**:
+\`\`\`
+Prompt: "To pick up the cup:
+1. First, identify the cup location
+2. Move arm above the cup
+3. Lower arm to grasp height
+4. Close gripper
+5. Lift cup upward
+
+Now execute step 1..."
+\`\`\`
+
+**Few-Shot Learning**:
+\`\`\`
+Example 1: "move left" → robot.move(-0.1, 0, 0)
+Example 2: "move forward" → robot.move(0, 0.1, 0)
+Example 3: "grasp" → robot.close_gripper()
+
+Task: "move right"
+\`\`\`
+
+## Fine-Tuning for Robotics
+
+Adapt foundation models to robot-specific tasks.
+
+**Low-Rank Adaptation (LoRA)**:
+\`\`\`python
+from peft import LoraConfig, get_peft_model
+
+# Configure LoRA
+lora_config = LoraConfig(
+    r=8,  # Low-rank dimension
+    lora_alpha=32,
+    target_modules=["q_proj", "v_proj"],
+    lora_dropout=0.1
+)
+
+# Apply LoRA to model
+model = get_peft_model(base_model, lora_config)
+
+# Train on robot demonstrations
+trainer.train(robot_dataset)
+\`\`\`
+
+## Challenges and Limitations
+
+**Computational Requirements**: Large models need significant compute.
+
+**Latency**: Real-time control requires fast inference.
+
+**Grounding**: Connecting abstract concepts to physical actions.
+
+**Safety**: Unpredictable generations require safety constraints.
+
+**Data Efficiency**: Limited robot data compared to internet text.
+
+## Future Directions
+
+**Embodied Foundation Models**: Models pre-trained specifically for robotics.
+
+**Efficient Architectures**: Smaller models with comparable performance.
+
+**Online Learning**: Continual adaptation during deployment.
+
+**Multi-Robot Foundation Models**: Models that transfer across robot types.
+
+Foundation models are transforming robotics by bringing powerful pre-trained capabilities to physical AI systems.`,
+                    readingTime: "22 min",
+                    keywords: ["foundation models", "clip", "llm", "gpt", "palm-e", "code as policy"]
                 }
             ]
         },
@@ -1282,6 +1669,291 @@ Nav2 uses behavior trees for complex navigation logic:
 Nav2 provides a production-ready navigation system that scales from simple to complex autonomous navigation scenarios.`,
                     readingTime: "22 min",
                     keywords: ["nav2", "navigation stack", "ros2 navigation", "autonomous navigation"]
+                },
+                {
+                    id: "chapter-6-3",
+                    title: "Chapter 3: SLAM - Simultaneous Localization and Mapping",
+                    content: `# SLAM - Simultaneous Localization and Mapping
+
+SLAM enables robots to build maps of unknown environments while simultaneously tracking their location within those maps.
+
+## The SLAM Problem
+
+**Challenge**: The chicken-and-egg problem of robotics.
+- Need map to localize
+- Need localization to build map
+- Must solve both simultaneously
+
+**Mathematical Formulation**:
+- Estimate robot poses: x₁, x₂, ..., xₜ
+- Estimate map: m
+- Given: sensor observations z₁, z₂, ..., zₜ and control inputs u₁, u₂, ..., uₜ
+
+## Types of SLAM
+
+**2D SLAM**: Build 2D occupancy grid maps (for mobile robots).
+
+**3D SLAM**: Build 3D point cloud or mesh maps (for aerial, underwater robots).
+
+**Visual SLAM**: Use cameras as primary sensor.
+
+**LiDAR SLAM**: Use laser rangefinders.
+
+**RGB-D SLAM**: Use depth cameras (Kinect, RealSense).
+
+## Key SLAM Approaches
+
+**Filter-Based SLAM**:
+- Extended Kalman Filter (EKF-SLAM)
+- Particle Filter (FastSLAM)
+- Incremental updates
+- Efficient for real-time operation
+
+**Graph-Based SLAM**:
+- Pose graph optimization
+- Better for large-scale environments
+- Loop closure detection and correction
+
+## EKF-SLAM Example
+
+\`\`\`python
+import numpy as np
+
+class EKFSLAM:
+    def __init__(self):
+        # State: [robot_x, robot_y, robot_theta, landmark1_x, landmark1_y, ...]
+        self.state = np.zeros(3)  # Initially just robot pose
+        self.covariance = np.eye(3) * 0.1
+
+        # Process and measurement noise
+        self.R = np.diag([0.1, 0.1, 0.05])  # Motion noise
+        self.Q = np.diag([0.1, 0.1])  # Observation noise
+
+    def predict(self, velocity, angular_velocity, dt):
+        """Prediction step - robot motion"""
+        x, y, theta = self.state[:3]
+
+        # Update robot pose
+        self.state[0] += velocity * np.cos(theta) * dt
+        self.state[1] += velocity * np.sin(theta) * dt
+        self.state[2] += angular_velocity * dt
+
+        # Jacobian of motion model
+        G = self.compute_motion_jacobian(velocity, theta, dt)
+
+        # Update covariance
+        self.covariance = G @ self.covariance @ G.T + self.R
+
+    def update(self, landmark_observations):
+        """Update step - sensor measurements"""
+        for obs in landmark_observations:
+            landmark_id = obs['id']
+            measured_range = obs['range']
+            measured_bearing = obs['bearing']
+
+            if self.is_new_landmark(landmark_id):
+                self.add_landmark(landmark_id, measured_range, measured_bearing)
+            else:
+                self.update_landmark(landmark_id, measured_range, measured_bearing)
+
+    def add_landmark(self, landmark_id, r, phi):
+        """Add newly observed landmark to map"""
+        x, y, theta = self.state[:3]
+
+        # Initialize landmark position
+        lx = x + r * np.cos(theta + phi)
+        ly = y + r * np.sin(theta + phi)
+
+        # Extend state and covariance
+        self.state = np.append(self.state, [lx, ly])
+        # ... extend covariance matrix
+
+    def update_landmark(self, landmark_id, measured_r, measured_phi):
+        """Update belief with landmark observation"""
+        # Predicted observation
+        predicted_r, predicted_phi = self.predict_observation(landmark_id)
+
+        # Innovation
+        innovation = np.array([
+            measured_r - predicted_r,
+            self.normalize_angle(measured_phi - predicted_phi)
+        ])
+
+        # Kalman gain
+        H = self.compute_observation_jacobian(landmark_id)
+        S = H @ self.covariance @ H.T + self.Q
+        K = self.covariance @ H.T @ np.linalg.inv(S)
+
+        # State update
+        self.state += K @ innovation
+
+        # Covariance update
+        self.covariance = (np.eye(len(self.state)) - K @ H) @ self.covariance
+\`\`\`
+
+## Graph-Based SLAM
+
+Represent SLAM as a graph optimization problem.
+
+\`\`\`python
+import g2o
+
+class GraphSLAM:
+    def __init__(self):
+        self.optimizer = g2o.SparseOptimizer()
+        solver = g2o.BlockSolverSE2(g2o.LinearSolverCholmodSE2())
+        solver = g2o.OptimizationAlgorithmLevenberg(solver)
+        self.optimizer.set_algorithm(solver)
+
+        self.vertex_count = 0
+
+    def add_robot_pose(self, pose):
+        """Add robot pose as vertex"""
+        v = g2o.VertexSE2()
+        v.set_id(self.vertex_count)
+        v.set_estimate(pose)
+
+        if self.vertex_count == 0:
+            v.set_fixed(True)  # Fix first pose
+
+        self.optimizer.add_vertex(v)
+        self.vertex_count += 1
+        return v.id()
+
+    def add_odometry_edge(self, from_id, to_id, measurement, information):
+        """Add odometry constraint between poses"""
+        edge = g2o.EdgeSE2()
+        edge.set_vertex(0, self.optimizer.vertex(from_id))
+        edge.set_vertex(1, self.optimizer.vertex(to_id))
+        edge.set_measurement(measurement)
+        edge.set_information(information)
+        self.optimizer.add_edge(edge)
+
+    def add_loop_closure(self, from_id, to_id, measurement, information):
+        """Add loop closure constraint"""
+        edge = g2o.EdgeSE2()
+        edge.set_vertex(0, self.optimizer.vertex(from_id))
+        edge.set_vertex(1, self.optimizer.vertex(to_id))
+        edge.set_measurement(measurement)
+        edge.set_information(information)
+        self.optimizer.add_edge(edge)
+
+    def optimize(self, iterations=10):
+        """Optimize the pose graph"""
+        self.optimizer.initialize_optimization()
+        self.optimizer.optimize(iterations)
+\`\`\`
+
+## Loop Closure Detection
+
+Recognize when robot returns to previously visited location.
+
+**Methods**:
+- **Appearance-based**: Compare current view with past views (Bag of Words, DBoW2)
+- **Geometric**: Match point cloud features
+- **Learning-based**: Neural network descriptors (NetVLAD)
+
+\`\`\`python
+import cv2
+from sklearn.neighbors import NearestNeighbors
+
+class LoopClosureDetector:
+    def __init__(self):
+        self.keyframe_descriptors = []
+        self.keyframe_poses = []
+        self.orb = cv2.ORB_create(nfeatures=1000)
+
+    def add_keyframe(self, image, pose):
+        """Add new keyframe to database"""
+        keypoints, descriptors = self.orb.detectAndCompute(image, None)
+        self.keyframe_descriptors.append(descriptors)
+        self.keyframe_poses.append(pose)
+
+    def detect_loop_closure(self, current_image, threshold=0.7):
+        """Check if current location matches previous keyframe"""
+        kp, desc = self.orb.detectAndCompute(current_image, None)
+
+        best_match_id = None
+        best_match_score = 0
+
+        for i, kf_desc in enumerate(self.keyframe_descriptors):
+            # Match descriptors
+            bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+            matches = bf.match(desc, kf_desc)
+
+            # Compute matching score
+            score = len(matches) / max(len(desc), len(kf_desc))
+
+            if score > threshold and score > best_match_score:
+                best_match_score = score
+                best_match_id = i
+
+        return best_match_id, best_match_score
+\`\`\`
+
+## ROS2 SLAM Packages
+
+**slam_toolbox**: 2D LiDAR SLAM with loop closure.
+
+\`\`\`bash
+ros2 launch slam_toolbox online_async_launch.py
+\`\`\`
+
+**cartographer**: Google's SLAM solution for 2D/3D.
+
+**rtabmap_ros**: RGB-D SLAM with visual odometry.
+
+**ORB_SLAM3**: State-of-the-art visual SLAM.
+
+## SLAM Configuration Example
+
+\`\`\`yaml
+# slam_toolbox configuration
+slam_toolbox:
+  ros__parameters:
+    # Solver parameters
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+
+    # Scan matcher
+    use_scan_matching: true
+    use_scan_barycenter: true
+    minimum_travel_distance: 0.5
+    minimum_travel_heading: 0.5
+
+    # Loop closure
+    loop_search_maximum_distance: 3.0
+    do_loop_closing: true
+    loop_match_minimum_chain_size: 10
+\`\`\`
+
+## SLAM Challenges
+
+**Scale Drift**: Accumulated error in large environments.
+
+**Dynamic Objects**: Moving objects confuse mapping.
+
+**Loop Closure**: Detecting revisited locations reliably.
+
+**Computational Cost**: Real-time performance requirements.
+
+**Perceptual Aliasing**: Different places look similar.
+
+## Advanced SLAM Topics
+
+**Multi-Robot SLAM**: Multiple robots collaboratively build map.
+
+**Semantic SLAM**: Include object labels in maps.
+
+**Dense SLAM**: Build detailed 3D reconstructions.
+
+**Lifelong SLAM**: Maintain maps over extended periods.
+
+SLAM is fundamental to autonomous robot operation, enabling robots to navigate and understand previously unknown environments.`,
+                    readingTime: "25 min",
+                    keywords: ["slam", "mapping", "localization", "loop closure", "graph slam", "ekf slam"]
                 }
             ]
         },
@@ -1546,6 +2218,362 @@ group.pick("object_name", [grasp])
 MoveIt provides powerful, production-ready manipulation planning for complex robot arms.`,
                     readingTime: "25 min",
                     keywords: ["moveit", "motion planning", "manipulation", "grasp planning"]
+                },
+                {
+                    id: "chapter-7-3",
+                    title: "Chapter 3: Grippers and Grasp Planning",
+                    content: `# Grippers and Grasp Planning
+
+Effective manipulation requires both capable end-effectors (grippers) and intelligent grasp planning.
+
+## Types of Grippers
+
+**Parallel Jaw Grippers**: Two parallel fingers for simple grasping.
+
+\`\`\`
+Advantages:
+- Simple control
+- Reliable
+- Cost-effective
+
+Limitations:
+- Limited adaptability
+- Size constraints
+\`\`\`
+
+**Multi-Fingered Hands**: Three or more fingers for dexterous manipulation.
+
+**Suction Grippers**: Vacuum-based for flat/smooth objects.
+
+**Magnetic Grippers**: For ferromagnetic materials.
+
+**Soft Grippers**: Compliant materials that conform to objects.
+
+**Anthropomorphic Hands**: Human-like hands (5 fingers, many DOF).
+
+## Gripper Selection Criteria
+
+**Payload**: Maximum weight to lift.
+
+**Size Range**: Min/max object dimensions.
+
+**Material Compatibility**: What surfaces can be grasped.
+
+**Speed**: Open/close cycle time.
+
+**Precision**: Positioning accuracy.
+
+**Durability**: Robustness in harsh environments.
+
+## Grasp Types
+
+**Power Grasp**: Entire hand wraps around object (strength).
+
+**Precision Grasp**: Fingertips hold object (dexterity).
+
+**Pinch Grasp**: Two fingers oppose (small objects).
+
+**Tripod Grasp**: Three contact points (stability).
+
+**Wrap Grasp**: Fingers wrap around cylindrical objects.
+
+## Grasp Quality Metrics
+
+**Force Closure**: Can resist arbitrary external forces.
+
+**Form Closure**: Geometric constraints prevent motion.
+
+**Grasp Wrench Space**: Set of forces/torques gripper can apply.
+
+**Ferrari-Canny Metric**: Minimum force to disturb grasp.
+
+\`\`\`python
+import numpy as np
+
+def compute_grasp_quality(contact_points, contact_normals, friction_coeff):
+    """
+    Compute grasp quality using force closure analysis
+
+    Args:
+        contact_points: Nx3 array of contact positions
+        contact_normals: Nx3 array of contact normals
+        friction_coeff: Friction coefficient
+
+    Returns:
+        quality_score: Grasp quality metric
+    """
+    n_contacts = len(contact_points)
+
+    # Build grasp matrix
+    G = []
+    for i in range(n_contacts):
+        point = contact_points[i]
+        normal = contact_normals[i]
+
+        # Force component
+        force_part = normal
+
+        # Torque component (r × n)
+        torque_part = np.cross(point, normal)
+
+        # Combine into grasp matrix column
+        G.append(np.concatenate([force_part, torque_part]))
+
+    G = np.array(G).T
+
+    # Check force closure (rank should be 6 for 3D)
+    rank = np.linalg.matrix_rank(G)
+
+    # Compute quality metric
+    if rank < 6:
+        return 0.0  # No force closure
+
+    # Compute minimum singular value (robustness)
+    singular_values = np.linalg.svd(G)[1]
+    quality = np.min(singular_values)
+
+    return quality
+\`\`\`
+
+## Grasp Planning Approaches
+
+**Analytical Methods**: Use geometric models and heuristics.
+
+**Sampling-Based**: Generate and evaluate many candidate grasps.
+
+**Learning-Based**: Train neural networks on grasp datasets.
+
+**Simulation-Based**: Test grasps in physics simulation.
+
+## Analytical Grasp Planning
+
+\`\`\`python
+class AnalyticalGraspPlanner:
+    def __init__(self, gripper_width=0.08):
+        self.gripper_width = gripper_width
+
+    def plan_parallel_jaw_grasp(self, object_point_cloud):
+        """
+        Plan grasp for parallel jaw gripper
+        """
+        # Find object principal axes
+        pca = self.compute_pca(object_point_cloud)
+        principal_axes = pca.components_
+
+        # Find grasp axis (typically narrowest dimension)
+        object_dimensions = self.compute_dimensions(object_point_cloud, principal_axes)
+        grasp_axis_idx = np.argmin(object_dimensions)
+        grasp_axis = principal_axes[grasp_axis_idx]
+
+        # Find grasp center (object centroid)
+        grasp_center = np.mean(object_point_cloud, axis=0)
+
+        # Compute approach direction (along grasp axis)
+        approach_direction = grasp_axis
+
+        # Generate grasp pose
+        grasp_pose = self.create_grasp_pose(
+            grasp_center,
+            approach_direction,
+            grasp_axis
+        )
+
+        return grasp_pose
+
+    def create_grasp_pose(self, position, approach, grasp_axis):
+        """Create 6D grasp pose from position and directions"""
+        # Build rotation matrix
+        z_axis = approach / np.linalg.norm(approach)
+        x_axis = grasp_axis / np.linalg.norm(grasp_axis)
+        y_axis = np.cross(z_axis, x_axis)
+
+        rotation = np.column_stack([x_axis, y_axis, z_axis])
+
+        return {
+            'position': position,
+            'orientation': rotation
+        }
+\`\`\`
+
+## Learning-Based Grasp Planning
+
+**GraspNet**: Deep learning for 6-DOF grasp pose detection.
+
+**GPD (Grasp Pose Detection)**: CNN for grasp quality prediction.
+
+**Contact-GraspNet**: Predict contact points for grasping.
+
+\`\`\`python
+import torch
+import torch.nn as nn
+
+class GraspQualityNet(nn.Module):
+    """Neural network to predict grasp quality"""
+
+    def __init__(self):
+        super().__init__()
+
+        # Point cloud encoder
+        self.point_encoder = nn.Sequential(
+            nn.Conv1d(3, 64, 1),
+            nn.ReLU(),
+            nn.Conv1d(64, 128, 1),
+            nn.ReLU(),
+            nn.Conv1d(128, 256, 1),
+        )
+
+        # Grasp pose encoder
+        self.pose_encoder = nn.Sequential(
+            nn.Linear(7, 64),  # position (3) + quaternion (4)
+            nn.ReLU(),
+            nn.Linear(64, 128),
+        )
+
+        # Quality predictor
+        self.quality_head = nn.Sequential(
+            nn.Linear(256 + 128, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1),
+            nn.Sigmoid()  # Quality score [0, 1]
+        )
+
+    def forward(self, point_cloud, grasp_pose):
+        # Encode point cloud
+        pc_features = self.point_encoder(point_cloud.transpose(1, 2))
+        pc_features = torch.max(pc_features, dim=2)[0]  # Max pooling
+
+        # Encode grasp pose
+        pose_features = self.pose_encoder(grasp_pose)
+
+        # Combine and predict quality
+        combined = torch.cat([pc_features, pose_features], dim=1)
+        quality = self.quality_head(combined)
+
+        return quality
+\`\`\`
+
+## Grasp Synthesis Pipeline
+
+**Step 1: Object Segmentation**: Isolate target object from scene.
+
+**Step 2: Grasp Candidate Generation**: Create many potential grasps.
+
+**Step 3: Grasp Ranking**: Evaluate and rank candidates.
+
+**Step 4: Collision Checking**: Verify gripper won't collide.
+
+**Step 5: Reachability Check**: Ensure arm can reach grasp pose.
+
+**Step 6: Execution**: Execute highest-ranked feasible grasp.
+
+## ROS2 Grasp Planning
+
+\`\`\`python
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import PoseStamped
+from sensor_msgs.msg import PointCloud2
+import numpy as np
+
+class GraspPlanningNode(Node):
+    def __init__(self):
+        super().__init__('grasp_planner')
+
+        # Subscribe to point cloud
+        self.subscription = self.create_subscription(
+            PointCloud2,
+            '/camera/depth/points',
+            self.pointcloud_callback,
+            10
+        )
+
+        # Publish grasp poses
+        self.grasp_pub = self.create_publisher(
+            PoseStamped,
+            '/grasp_pose',
+            10
+        )
+
+        self.grasp_planner = AnalyticalGraspPlanner()
+
+    def pointcloud_callback(self, msg):
+        # Convert ROS PointCloud2 to numpy
+        points = self.pointcloud2_to_array(msg)
+
+        # Segment object (simplified)
+        object_points = self.segment_object(points)
+
+        # Plan grasp
+        grasp_pose = self.grasp_planner.plan_parallel_jaw_grasp(object_points)
+
+        # Publish grasp
+        grasp_msg = self.create_pose_msg(grasp_pose)
+        self.grasp_pub.publish(grasp_msg)
+
+        self.get_logger().info('Published grasp pose')
+\`\`\`
+
+## Advanced Grasp Planning Topics
+
+**In-Hand Manipulation**: Reposition object within gripper.
+
+**Multi-Object Grasping**: Grasp multiple objects simultaneously.
+
+**Deformable Object Grasping**: Handle soft/flexible objects.
+
+**Bin Picking**: Grasp from cluttered bins.
+
+**Task-Oriented Grasping**: Choose grasps based on subsequent task.
+
+## Gripper Control
+
+**Position Control**: Specify finger positions.
+
+**Force Control**: Specify gripping force.
+
+**Impedance Control**: Combine position and force.
+
+\`\`\`python
+class GripperController:
+    def __init__(self):
+        self.max_force = 50.0  # Newtons
+        self.max_width = 0.08  # meters
+
+    def grasp(self, target_width=0.0, force=20.0):
+        """Execute grasp with force control"""
+        # Close gripper to target width
+        self.move_to_width(target_width)
+
+        # Apply force
+        current_force = 0.0
+        while current_force < force:
+            current_force = self.get_gripper_force()
+            if current_force > force * 0.9:
+                break
+            self.apply_force(force - current_force)
+
+        return self.is_object_grasped()
+
+    def release(self):
+        """Open gripper to release object"""
+        self.move_to_width(self.max_width)
+\`\`\`
+
+## Sim-to-Real Transfer
+
+Test grasps in simulation before real execution.
+
+**Physics Simulation**: Use realistic friction, compliance models.
+
+**Domain Randomization**: Vary object properties during training.
+
+**Real-World Validation**: Test on physical hardware.
+
+Effective grasp planning combines mechanical design, geometric reasoning, and learning-based optimization to enable reliable manipulation.`,
+                    readingTime: "23 min",
+                    keywords: ["grippers", "grasp planning", "manipulation", "force closure", "grasp quality"]
                 }
             ]
         },

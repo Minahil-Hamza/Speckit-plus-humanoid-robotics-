@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'https://backend-2nvyadi25-minahil-hamzas-projects.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5001/api';
 
 // Global variables
 let currentUser = null;
@@ -18,84 +18,84 @@ function initializeThreeJS() {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    
+
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000, 0);
-    
+
     document.getElementById('robot-scene').appendChild(renderer.domElement);
-    
+
     // Create a simple robot
     const robotGroup = new THREE.Group();
-    
+
     // Robot body
     const bodyGeometry = new THREE.BoxGeometry(1, 1.5, 0.8);
-    const bodyMaterial = new THREE.MeshBasicMaterial({ 
+    const bodyMaterial = new THREE.MeshBasicMaterial({
         color: 0x00ffff,
         wireframe: true
     });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     robotGroup.add(body);
-    
+
     // Robot head
     const headGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-    const headMaterial = new THREE.MeshBasicMaterial({ 
+    const headMaterial = new THREE.MeshBasicMaterial({
         color: 0x00ff88,
         wireframe: true
     });
     const head = new THREE.Mesh(headGeometry, headMaterial);
     head.position.y = 1.2;
     robotGroup.add(head);
-    
+
     // Robot arms
     const armGeometry = new THREE.BoxGeometry(0.3, 0.8, 0.3);
-    const armMaterial = new THREE.MeshBasicMaterial({ 
+    const armMaterial = new THREE.MeshBasicMaterial({
         color: 0x00ffff,
         wireframe: true
     });
-    
+
     const leftArm = new THREE.Mesh(armGeometry, armMaterial);
     leftArm.position.x = -0.7;
     leftArm.position.y = 0.3;
     robotGroup.add(leftArm);
-    
+
     const rightArm = new THREE.Mesh(armGeometry, armMaterial);
     rightArm.position.x = 0.7;
     rightArm.position.y = 0.3;
     robotGroup.add(rightArm);
-    
+
     // Robot legs
     const legGeometry = new THREE.BoxGeometry(0.4, 0.8, 0.4);
-    const legMaterial = new THREE.MeshBasicMaterial({ 
+    const legMaterial = new THREE.MeshBasicMaterial({
         color: 0x00ff88,
         wireframe: true
     });
-    
+
     const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
     leftLeg.position.x = -0.3;
     leftLeg.position.y = -1.1;
     robotGroup.add(leftLeg);
-    
+
     const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
     rightLeg.position.x = 0.3;
     rightLeg.position.y = -1.1;
     robotGroup.add(rightLeg);
-    
+
     scene.add(robotGroup);
-    
+
     camera.position.z = 5;
-    
+
     // Animation
     function animate() {
         requestAnimationFrame(animate);
-        
+
         robotGroup.rotation.x += 0.01;
         robotGroup.rotation.y += 0.01;
-        
+
         renderer.render(scene, camera);
     }
-    
+
     animate();
-    
+
     // Handle window resize
     window.addEventListener('resize', function() {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -110,7 +110,7 @@ function switchTab(tab) {
     const registerForm = document.getElementById('registerForm');
     const loginTab = document.getElementById('loginTab');
     const registerTab = document.getElementById('registerTab');
-    
+
     if (tab === 'login') {
         loginForm.style.display = 'block';
         registerForm.style.display = 'none';
@@ -131,12 +131,12 @@ async function register() {
     const password = document.getElementById('registerPassword').value;
     const confirmPassword = document.getElementById('registerConfirmPassword').value;
     const language = document.getElementById('registerLanguage').value;
-    
+
     if (password !== confirmPassword) {
         alert('Passwords do not match!');
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
@@ -149,9 +149,9 @@ async function register() {
                 password
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             alert('Registration successful! Please log in.');
             switchTab('login');
@@ -171,7 +171,7 @@ async function login() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     const language = document.getElementById('languageSelect').value;
-    
+
     try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
@@ -183,30 +183,30 @@ async function login() {
                 password
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             currentUser = data.data.user;
             authToken = data.data.token;
-            
+
             // Store auth data
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             localStorage.setItem('preferredLanguage', language);
-            
+
             // Show main content and hide auth container
             document.getElementById('authContainer').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
-            
+
             // Update UI with user info
             document.getElementById('userName').textContent = currentUser.name;
-            
+
             // Load book content and chapters
             loadBookContent();
             loadChapters();
             loadProgress();
-            
+
             // Celebrate login
             confetti({
                 particleCount: 100,
@@ -226,18 +226,18 @@ async function login() {
 function checkAuthStatus() {
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('currentUser');
-    
+
     if (token && user) {
         authToken = token;
         currentUser = JSON.parse(user);
-        
+
         // Show main content
         document.getElementById('authContainer').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
-        
+
         // Update UI with user info
         document.getElementById('userName').textContent = currentUser.name;
-        
+
         // Load book content and chapters
         loadBookContent();
         loadChapters();
@@ -310,9 +310,9 @@ async function loadBookContent() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             // Update book content display (we'll update this when a chapter is selected)
             console.log('Book content loaded');
@@ -545,12 +545,12 @@ async function updateProgress(progressData) {
 async function sendMessage() {
     const userInput = document.getElementById('userInput');
     const message = userInput.value.trim();
-    
+
     if (!message) return;
-    
+
     const chatMessages = document.getElementById('chatMessages');
     const language = document.getElementById('chatLanguage').value;
-    
+
     // Add user message to chat
     const userMessageDiv = document.createElement('div');
     userMessageDiv.className = 'message user';
@@ -561,10 +561,10 @@ async function sendMessage() {
         <div class="avatar">👤</div>
     `;
     chatMessages.appendChild(userMessageDiv);
-    
+
     // Clear input
     userInput.value = '';
-    
+
     // Show loading indicator
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'message bot';
@@ -575,10 +575,10 @@ async function sendMessage() {
         </div>
     `;
     chatMessages.appendChild(loadingDiv);
-    
+
     // Scroll to bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    
+
     try {
         // Use public or protected endpoint based on mode
         const endpoint = isGuestMode ? `${API_BASE_URL}/public/chat` : `${API_BASE_URL}/chat`;
@@ -595,12 +595,12 @@ async function sendMessage() {
                 language: language
             })
         });
-        
+
         const data = await response.json();
-        
+
         // Remove loading indicator
         chatMessages.removeChild(loadingDiv);
-        
+
         if (data.success) {
             // Add AI response to chat
             const aiMessageDiv = document.createElement('div');
@@ -627,7 +627,7 @@ async function sendMessage() {
     } catch (error) {
         // Remove loading indicator
         chatMessages.removeChild(loadingDiv);
-        
+
         // Show error message
         const errorDiv = document.createElement('div');
         errorDiv.className = 'message bot';
@@ -639,7 +639,7 @@ async function sendMessage() {
         `;
         chatMessages.appendChild(errorDiv);
     }
-    
+
     // Scroll to bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -660,7 +660,7 @@ function addInteractiveEffects() {
             button.style.transform = 'scale(1.05)';
             button.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.6)';
         });
-        
+
         button.addEventListener('mouseleave', () => {
             button.style.transform = 'scale(1)';
             button.style.boxShadow = 'none';

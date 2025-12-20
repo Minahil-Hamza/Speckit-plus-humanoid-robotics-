@@ -70,6 +70,7 @@ app.use(cors({
     'https://physical-ai-robotics-chi.vercel.app',
     'https://physical-ai-robotics-minahil-hamzas-projects.vercel.app',
     'https://physical-ai-robotics-lmpl2ni7e-minahil-hamzas-projects.vercel.app',
+    'https://frontend-9k1bjcb57-minahil-hamzas-projects.vercel.app',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true

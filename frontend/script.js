@@ -5,6 +5,7 @@ const API_BASE_URL = 'https://backend-mdzmgod3p-minahil-hamzas-projects.vercel.a
 let currentUser = null;
 let authToken = null;
 let currentChapter = null;
+let isGuestMode = false;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -245,26 +246,52 @@ function checkAuthStatus() {
     // If no token, stay on auth page (default behavior)
 }
 
+// Guest Mode - Start learning without registration
+function startGuestMode() {
+    isGuestMode = true;
+    currentUser = { name: 'Guest User' };
+
+    // Show main content and hide auth container
+    document.getElementById('authContainer').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+
+    // Update UI with guest info
+    document.getElementById('userName').textContent = 'Guest User';
+
+    // Load book content and chapters
+    loadBookContent();
+    loadChapters();
+
+    // Celebrate guest access
+    confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+    });
+}
+
 // Logout function
 function logout() {
-    if (confirm('Are you sure you want to logout?')) {
+    const message = isGuestMode ? 'Exit guest mode?' : 'Are you sure you want to logout?';
+    if (confirm(message)) {
         localStorage.removeItem('authToken');
         localStorage.removeItem('currentUser');
         localStorage.removeItem('preferredLanguage');
-        
+
         currentUser = null;
         authToken = null;
-        
+        isGuestMode = false;
+
         // Show auth container and hide main content
         document.getElementById('authContainer').style.display = 'block';
         document.getElementById('mainContent').style.display = 'none';
-        
+
         // Reset forms
         document.getElementById('loginForm').style.display = 'block';
         document.getElementById('registerForm').style.display = 'none';
         document.getElementById('loginTab').classList.add('active');
         document.getElementById('registerTab').classList.remove('active');
-        
+
         // Clear form fields
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
@@ -300,11 +327,11 @@ async function loadBookContent() {
 // Load chapters list (now with modules)
 async function loadChapters() {
     try {
-        const response = await fetch(`${API_BASE_URL}/book-content`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        // Use public or protected endpoint based on mode
+        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-content` : `${API_BASE_URL}/book-content`;
+        const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
+
+        const response = await fetch(endpoint, { headers });
 
         const data = await response.json();
 
@@ -452,20 +479,26 @@ async function selectChapter(chapter) {
 
 // Load user progress
 async function loadProgress() {
+    // Skip progress loading for guest users
+    if (isGuestMode) {
+        console.log('Guest mode - progress tracking disabled');
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}/book-progress`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             // Update chapter items to show completed status
             const chapterItems = document.querySelectorAll('.chapter-item');
             const completedModules = data.data.progress.completedModules;
-            
+
             chapterItems.forEach(item => {
                 const chapterTitle = item.textContent.replace(/^\d+\.\s*/, '');
                 if (completedModules.includes(chapterTitle)) {
@@ -480,6 +513,11 @@ async function loadProgress() {
 
 // Update user progress
 async function updateProgress(progressData) {
+    // Skip progress updates for guest users
+    if (isGuestMode) {
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}/book-progress`, {
             method: 'PUT',
@@ -489,9 +527,9 @@ async function updateProgress(progressData) {
             },
             body: JSON.stringify(progressData)
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             console.log('Progress updated successfully');
             loadProgress(); // Reload progress to update UI
@@ -542,13 +580,16 @@ async function sendMessage() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
     try {
+        // Use public or protected endpoint based on mode
+        const endpoint = isGuestMode ? `${API_BASE_URL}/public/chat` : `${API_BASE_URL}/chat`;
+        const headers = isGuestMode
+            ? { 'Content-Type': 'application/json' }
+            : { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` };
+
         // Send message to backend API
-        const response = await fetch(`${API_BASE_URL}/chat`, {
+        const response = await fetch(endpoint, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
+            headers: headers,
             body: JSON.stringify({
                 query: message,
                 language: language

@@ -588,6 +588,83 @@ async function translateToUrdu(text, aiProvider = null) {
 // Protect the chat endpoint with authentication
 const { protect } = require('./middleware/auth');
 
+// Public Chat API endpoint (no authentication required)
+app.post('/api/public/chat', async (req, res) => {
+    const { query, language } = req.body;
+
+    if (!query) {
+        return res.status(400).json({
+            success: false,
+            message: 'Query is required'
+        });
+    }
+
+    console.log(`Received query from guest: "${query.substring(0, 100)}${query.length > 100 ? '...' : ''}" in language: ${language || 'default'}`);
+
+    try {
+        let answer = '';
+        let sourceInfo = 'fallback';
+
+        // Try OpenAI API first if available (most reliable for guests)
+        if (openai) {
+            console.log("Attempting to use OpenAI API for guest...");
+            try {
+                const chatCompletion = await openai.chat.completions.create({
+                    model: "gpt-4o",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a helpful AI assistant for a Physical AI & Robotics course. Help students understand concepts related to ROS2, robotics simulation, digital twins, AI robot brains, vision-language-action models, and related topics. Provide clear, concise explanations. Always be accurate, educational, and encourage deeper learning."
+                        },
+                        {
+                            role: "user",
+                            content: query
+                        }
+                    ],
+                    max_tokens: 1024,
+                    temperature: 0.7,
+                });
+
+                answer = chatCompletion.choices[0].message.content;
+                sourceInfo = 'openai';
+                console.log("Successfully responded using OpenAI API");
+            } catch (openaiError) {
+                console.error("OpenAI API failed:", openaiError.message || openaiError);
+                // Fall back to enhanced fallback
+                answer = getResponse(query);
+                sourceInfo = 'enhanced_fallback';
+            }
+        } else {
+            // Use enhanced fallback
+            answer = getResponse(query);
+            sourceInfo = 'enhanced_fallback';
+        }
+
+        // If the user requested Urdu translation, translate the answer
+        if (language && language.toLowerCase() === 'urdu') {
+            console.log("Translating response to Urdu...");
+            answer = await translateToUrdu(answer, sourceInfo);
+            sourceInfo += '_with_urdu_translation';
+        }
+
+        console.log(`Responding to guest with source: ${sourceInfo}`);
+        res.json({
+            success: true,
+            answer: answer,
+            source: sourceInfo,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error("Critical error in public chat API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during chat processing.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // Enhanced Chat API endpoint with fallback options, Urdu translation support, and authentication
 app.post('/api/chat', protect, async (req, res) => {
     const { query, language } = req.body; // Added language parameter
@@ -882,7 +959,32 @@ app.post('/api/chat', protect, async (req, res) => {
 // Import modular book content
 const structuredBookContent = require('./book_content');
 
-// New protected route for book content
+// Public route for book content (no authentication required)
+app.get('/api/public/book-content', async (req, res) => {
+    try {
+        console.log('Guest user accessed book content');
+
+        // Return the structured modular book content
+        res.json({
+            success: true,
+            message: 'Book content retrieved successfully',
+            data: {
+                bookContent: structuredBookContent,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Error in public book content API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during book content retrieval.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Protected route for book content (for logged-in users)
 app.get('/api/book-content', protect, async (req, res) => {
     try {
         console.log(`User ${req.user.email} accessed book content`);

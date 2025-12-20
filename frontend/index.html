@@ -23,7 +23,17 @@
                 <button id="loginTab" class="tab-btn active" onclick="switchTab('login')">Login</button>
                 <button id="registerTab" class="tab-btn" onclick="switchTab('register')">Register</button>
             </div>
-            
+
+            <div class="guest-access" style="text-align: center; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,255,136,0.1)); border-radius: 10px; border: 1px solid rgba(0,255,255,0.3);">
+                <p style="color: #00ffff; margin-bottom: 15px; font-size: 16px;">
+                    <strong>Try without registration!</strong><br>
+                    <span style="font-size: 14px; color: #888;">Start learning immediately - no account needed</span>
+                </p>
+                <button onclick="startGuestMode()" class="guest-btn" style="background: linear-gradient(135deg, #00ffff, #00ff88); color: #000; font-weight: bold; padding: 12px 30px; border: none; border-radius: 25px; font-size: 16px; cursor: pointer; transition: transform 0.3s; box-shadow: 0 4px 15px rgba(0,255,255,0.3);">
+                    🚀 Start Learning Now
+                </button>
+            </div>
+
             <div id="loginForm" class="auth-form">
                 <h2>Welcome Back, Robot Engineer!</h2>
                 <div class="input-group">

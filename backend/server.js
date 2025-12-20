@@ -65,15 +65,29 @@ const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://physical-ai-robotics-chi.vercel.app',
-    'https://physical-ai-robotics-minahil-hamzas-projects.vercel.app',
-    'https://physical-ai-robotics-lmpl2ni7e-minahil-hamzas-projects.vercel.app',
-    'https://frontend-9k1bjcb57-minahil-hamzas-projects.vercel.app',
-    'https://frontend-i0reil9o9-minahil-hamzas-projects.vercel.app',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://physical-ai-robotics-chi.vercel.app',
+      'https://physical-ai-robotics-minahil-hamzas-projects.vercel.app',
+      'https://physical-ai-robotics-lmpl2ni7e-minahil-hamzas-projects.vercel.app',
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+
+    // Allow all Vercel frontend deployments
+    if (origin.includes('frontend') && origin.includes('minahil-hamzas-projects.vercel.app')) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 

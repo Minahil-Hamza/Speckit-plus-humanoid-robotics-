@@ -1,0 +1,1401 @@
+{
+  "title": "Physical AI & Robotics: Complete Professional Guide",
+  "description": "Master Physical AI, Robotics, ROS2, Computer Vision, Machine Learning, and Autonomous Systems - From Beginner to Expert (80 Comprehensive Chapters)",
+  "author": "Dr. Minahil Hamza",
+  "authorBio": "Dr. Minahil Hamza is a Doctor of Pharmacy graduate and an AI-driven technologist specializing in TypeScript, Next.js, Python, Firebase, OpenAI SDK, Gemini CLI, Cloud tools, and Speckit Plus. With over three years of experience in the pharmaceutical industry, including her role as a Medical Advisor at Novo Nordisk, she has combined healthcare knowledge with modern technology to create innovative digital solutions. Through this book, Physical AI & Robotics, she aims to make intelligent systems and real-world robotics accessible for learners, empowering them to become future innovators in the era of Physical AI.",
+  "publicationDate": "2024",
+  "version": "3.0 - Complete Edition",
+  "totalModules": 10,
+  "totalChapters": 80,
+  "modules": [
+    {
+      "id": "module-1",
+      "title": "Module 1: Introduction to Robotics & AI",
+      "description": "Foundation concepts in robotics, AI, and their intersection",
+      "difficulty": "Beginner",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-1-1",
+          "title": "What is a Robot?",
+          "learningObjectives": [
+            "Understand the core concepts of what is a robot?",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "20 min",
+          "keywords": [
+            "what",
+            "is",
+            "a",
+            "robot?"
+          ]
+        },
+        {
+          "id": "chapter-1-2",
+          "title": "History of Robotics",
+          "learningObjectives": [
+            "Understand the core concepts of history of robotics",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "25 min",
+          "keywords": [
+            "history",
+            "of",
+            "robotics"
+          ]
+        },
+        {
+          "id": "chapter-1-3",
+          "title": "Artificial Intelligence Fundamentals",
+          "learningObjectives": [
+            "Understand the core concepts of artificial intelligence fundamentals",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "artificial",
+            "intelligence",
+            "fundamentals"
+          ]
+        },
+        {
+          "id": "chapter-1-4",
+          "title": "Robot Operating System (ROS) Introduction",
+          "learningObjectives": [
+            "Understand the core concepts of robot operating system (ros) introduction",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "robot",
+            "operating",
+            "system",
+            "(ros)",
+            "introduction"
+          ]
+        },
+        {
+          "id": "chapter-1-5",
+          "title": "Types of Robots and Applications",
+          "learningObjectives": [
+            "Understand the core concepts of types of robots and applications",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "25 min",
+          "keywords": [
+            "types",
+            "of",
+            "robots",
+            "and",
+            "applications"
+          ]
+        },
+        {
+          "id": "chapter-1-6",
+          "title": "Robot Kinematics Basics",
+          "learningObjectives": [
+            "Understand the core concepts of robot kinematics basics",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "robot",
+            "kinematics",
+            "basics"
+          ]
+        },
+        {
+          "id": "chapter-1-7",
+          "title": "Sensors and Perception",
+          "learningObjectives": [
+            "Understand the core concepts of sensors and perception",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "28 min",
+          "keywords": [
+            "sensors",
+            "and",
+            "perception"
+          ]
+        },
+        {
+          "id": "chapter-1-8",
+          "title": "Actuators and Control Systems",
+          "learningObjectives": [
+            "Understand the core concepts of actuators and control systems",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "27 min",
+          "keywords": [
+            "actuators",
+            "and",
+            "control",
+            "systems"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-2",
+      "title": "Module 2: Robot Hardware & Components",
+      "description": "Deep dive into robot hardware, sensors, and actuators",
+      "difficulty": "Beginner",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-2-1",
+          "title": "Microcontrollers vs Single-Board Computers",
+          "learningObjectives": [
+            "Understand the core concepts of microcontrollers vs single-board computers",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "22 min",
+          "keywords": [
+            "microcontrollers",
+            "vs",
+            "single-board",
+            "computers"
+          ]
+        },
+        {
+          "id": "chapter-2-2",
+          "title": "Motors and Motor Drivers",
+          "learningObjectives": [
+            "Understand the core concepts of motors and motor drivers",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "motors",
+            "and",
+            "motor",
+            "drivers"
+          ]
+        },
+        {
+          "id": "chapter-2-3",
+          "title": "Camera Systems and Computer Vision Hardware",
+          "learningObjectives": [
+            "Understand the core concepts of camera systems and computer vision hardware",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "28 min",
+          "keywords": [
+            "camera",
+            "systems",
+            "and",
+            "computer",
+            "vision"
+          ]
+        },
+        {
+          "id": "chapter-2-4",
+          "title": "LiDAR and Range Sensors",
+          "learningObjectives": [
+            "Understand the core concepts of lidar and range sensors",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "25 min",
+          "keywords": [
+            "lidar",
+            "and",
+            "range",
+            "sensors"
+          ]
+        },
+        {
+          "id": "chapter-2-5",
+          "title": "IMU and Odometry Sensors",
+          "learningObjectives": [
+            "Understand the core concepts of imu and odometry sensors",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "24 min",
+          "keywords": [
+            "imu",
+            "and",
+            "odometry",
+            "sensors"
+          ]
+        },
+        {
+          "id": "chapter-2-6",
+          "title": "Power Systems and Battery Management",
+          "learningObjectives": [
+            "Understand the core concepts of power systems and battery management",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "26 min",
+          "keywords": [
+            "power",
+            "systems",
+            "and",
+            "battery",
+            "management"
+          ]
+        },
+        {
+          "id": "chapter-2-7",
+          "title": "Communication Protocols (UART, I2C, SPI, CAN)",
+          "learningObjectives": [
+            "Understand the core concepts of communication protocols (uart, i2c, spi, can)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "32 min",
+          "keywords": [
+            "communication",
+            "protocols",
+            "(uart,",
+            "i2c,",
+            "spi,"
+          ]
+        },
+        {
+          "id": "chapter-2-8",
+          "title": "Robot Chassis Design and Mechanics",
+          "learningObjectives": [
+            "Understand the core concepts of robot chassis design and mechanics",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "29 min",
+          "keywords": [
+            "robot",
+            "chassis",
+            "design",
+            "and",
+            "mechanics"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-3",
+      "title": "Module 3: ROS2 Deep Dive",
+      "description": "Master ROS2 for professional robot development",
+      "difficulty": "Intermediate",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-3-1",
+          "title": "ROS2 Installation and Workspace Setup",
+          "learningObjectives": [
+            "Understand the core concepts of ros2 installation and workspace setup",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "25 min",
+          "keywords": [
+            "ros2",
+            "installation",
+            "and",
+            "workspace",
+            "setup"
+          ]
+        },
+        {
+          "id": "chapter-3-2",
+          "title": "Creating ROS2 Nodes and Publishers/Subscribers",
+          "learningObjectives": [
+            "Understand the core concepts of creating ros2 nodes and publishers/subscribers",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "creating",
+            "ros2",
+            "nodes",
+            "and",
+            "publishers/subscribers"
+          ]
+        },
+        {
+          "id": "chapter-3-3",
+          "title": "Services and Actions in ROS2",
+          "learningObjectives": [
+            "Understand the core concepts of services and actions in ros2",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "services",
+            "and",
+            "actions",
+            "in",
+            "ros2"
+          ]
+        },
+        {
+          "id": "chapter-3-4",
+          "title": "Custom Messages, Services, and Actions",
+          "learningObjectives": [
+            "Understand the core concepts of custom messages, services, and actions",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "28 min",
+          "keywords": [
+            "custom",
+            "messages,",
+            "services,",
+            "and",
+            "actions"
+          ]
+        },
+        {
+          "id": "chapter-3-5",
+          "title": "Launch Files and Parameters",
+          "learningObjectives": [
+            "Understand the core concepts of launch files and parameters",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "26 min",
+          "keywords": [
+            "launch",
+            "files",
+            "and",
+            "parameters"
+          ]
+        },
+        {
+          "id": "chapter-3-6",
+          "title": "TF2 Transforms and Coordinate Frames",
+          "learningObjectives": [
+            "Understand the core concepts of tf2 transforms and coordinate frames",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "32 min",
+          "keywords": [
+            "tf2",
+            "transforms",
+            "and",
+            "coordinate",
+            "frames"
+          ]
+        },
+        {
+          "id": "chapter-3-7",
+          "title": "ROS2 Packages and Build System (Colcon)",
+          "learningObjectives": [
+            "Understand the core concepts of ros2 packages and build system (colcon)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "24 min",
+          "keywords": [
+            "ros2",
+            "packages",
+            "and",
+            "build",
+            "system"
+          ]
+        },
+        {
+          "id": "chapter-3-8",
+          "title": "RViz, Gazebo, and Simulation",
+          "learningObjectives": [
+            "Understand the core concepts of rviz, gazebo, and simulation",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "33 min",
+          "keywords": [
+            "rviz,",
+            "gazebo,",
+            "and",
+            "simulation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-4",
+      "title": "Module 4: Computer Vision for Robotics",
+      "description": "Enable robots to see and understand their environment",
+      "difficulty": "Intermediate",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-4-1",
+          "title": "Image Processing Fundamentals",
+          "learningObjectives": [
+            "Understand the core concepts of image processing fundamentals",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "image",
+            "processing",
+            "fundamentals"
+          ]
+        },
+        {
+          "id": "chapter-4-2",
+          "title": "Object Detection (YOLO, Faster R-CNN)",
+          "learningObjectives": [
+            "Understand the core concepts of object detection (yolo, faster r-cnn)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "object",
+            "detection",
+            "(yolo,",
+            "faster",
+            "r-cnn)"
+          ]
+        },
+        {
+          "id": "chapter-4-3",
+          "title": "Semantic Segmentation",
+          "learningObjectives": [
+            "Understand the core concepts of semantic segmentation",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "28 min",
+          "keywords": [
+            "semantic",
+            "segmentation"
+          ]
+        },
+        {
+          "id": "chapter-4-4",
+          "title": "3D Vision and Depth Estimation",
+          "learningObjectives": [
+            "Understand the core concepts of 3d vision and depth estimation",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "32 min",
+          "keywords": [
+            "3d",
+            "vision",
+            "and",
+            "depth",
+            "estimation"
+          ]
+        },
+        {
+          "id": "chapter-4-5",
+          "title": "Visual SLAM (Simultaneous Localization and Mapping)",
+          "learningObjectives": [
+            "Understand the core concepts of visual slam (simultaneous localization and mapping)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "40 min",
+          "keywords": [
+            "visual",
+            "slam",
+            "(simultaneous",
+            "localization",
+            "and"
+          ]
+        },
+        {
+          "id": "chapter-4-6",
+          "title": "Pose Estimation and Tracking",
+          "learningObjectives": [
+            "Understand the core concepts of pose estimation and tracking",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "27 min",
+          "keywords": [
+            "pose",
+            "estimation",
+            "and",
+            "tracking"
+          ]
+        },
+        {
+          "id": "chapter-4-7",
+          "title": "Camera Calibration and Stereo Vision",
+          "learningObjectives": [
+            "Understand the core concepts of camera calibration and stereo vision",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "29 min",
+          "keywords": [
+            "camera",
+            "calibration",
+            "and",
+            "stereo",
+            "vision"
+          ]
+        },
+        {
+          "id": "chapter-4-8",
+          "title": "Real-time Vision Processing with OpenCV and CUDA",
+          "learningObjectives": [
+            "Understand the core concepts of real-time vision processing with opencv and cuda",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "33 min",
+          "keywords": [
+            "real-time",
+            "vision",
+            "processing",
+            "with",
+            "opencv"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-5",
+      "title": "Module 5: Motion Planning & Control",
+      "description": "Plan robot movements and execute precise control",
+      "difficulty": "Intermediate",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-5-1",
+          "title": "Path Planning Algorithms (A*, RRT, PRM)",
+          "learningObjectives": [
+            "Understand the core concepts of path planning algorithms (a*, rrt, prm)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "path",
+            "planning",
+            "algorithms",
+            "(a*,",
+            "rrt,"
+          ]
+        },
+        {
+          "id": "chapter-5-2",
+          "title": "Trajectory Generation and Optimization",
+          "learningObjectives": [
+            "Understand the core concepts of trajectory generation and optimization",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "32 min",
+          "keywords": [
+            "trajectory",
+            "generation",
+            "and",
+            "optimization"
+          ]
+        },
+        {
+          "id": "chapter-5-3",
+          "title": "PID Control for Robotics",
+          "learningObjectives": [
+            "Understand the core concepts of pid control for robotics",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "28 min",
+          "keywords": [
+            "pid",
+            "control",
+            "for",
+            "robotics"
+          ]
+        },
+        {
+          "id": "chapter-5-4",
+          "title": "Model Predictive Control (MPC)",
+          "learningObjectives": [
+            "Understand the core concepts of model predictive control (mpc)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "model",
+            "predictive",
+            "control",
+            "(mpc)"
+          ]
+        },
+        {
+          "id": "chapter-5-5",
+          "title": "Inverse Kinematics and Forward Kinematics",
+          "learningObjectives": [
+            "Understand the core concepts of inverse kinematics and forward kinematics",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "34 min",
+          "keywords": [
+            "inverse",
+            "kinematics",
+            "and",
+            "forward",
+            "kinematics"
+          ]
+        },
+        {
+          "id": "chapter-5-6",
+          "title": "Collision Avoidance and Safety",
+          "learningObjectives": [
+            "Understand the core concepts of collision avoidance and safety",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "26 min",
+          "keywords": [
+            "collision",
+            "avoidance",
+            "and",
+            "safety"
+          ]
+        },
+        {
+          "id": "chapter-5-7",
+          "title": "Velocity and Acceleration Limits",
+          "learningObjectives": [
+            "Understand the core concepts of velocity and acceleration limits",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "24 min",
+          "keywords": [
+            "velocity",
+            "and",
+            "acceleration",
+            "limits"
+          ]
+        },
+        {
+          "id": "chapter-5-8",
+          "title": "MoveIt2 for Robot Arm Control",
+          "learningObjectives": [
+            "Understand the core concepts of moveit2 for robot arm control",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "36 min",
+          "keywords": [
+            "moveit2",
+            "for",
+            "robot",
+            "arm",
+            "control"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-6",
+      "title": "Module 6: Machine Learning for Robotics",
+      "description": "Apply ML and Deep Learning to robot intelligence",
+      "difficulty": "Advanced",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-6-1",
+          "title": "Supervised Learning for Robot Perception",
+          "learningObjectives": [
+            "Understand the core concepts of supervised learning for robot perception",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "32 min",
+          "keywords": [
+            "supervised",
+            "learning",
+            "for",
+            "robot",
+            "perception"
+          ]
+        },
+        {
+          "id": "chapter-6-2",
+          "title": "Reinforcement Learning Basics",
+          "learningObjectives": [
+            "Understand the core concepts of reinforcement learning basics",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "reinforcement",
+            "learning",
+            "basics"
+          ]
+        },
+        {
+          "id": "chapter-6-3",
+          "title": "Deep Q-Networks (DQN) for Robot Control",
+          "learningObjectives": [
+            "Understand the core concepts of deep q-networks (dqn) for robot control",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "38 min",
+          "keywords": [
+            "deep",
+            "q-networks",
+            "(dqn)",
+            "for",
+            "robot"
+          ]
+        },
+        {
+          "id": "chapter-6-4",
+          "title": "Policy Gradient Methods (PPO, SAC)",
+          "learningObjectives": [
+            "Understand the core concepts of policy gradient methods (ppo, sac)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "40 min",
+          "keywords": [
+            "policy",
+            "gradient",
+            "methods",
+            "(ppo,",
+            "sac)"
+          ]
+        },
+        {
+          "id": "chapter-6-5",
+          "title": "Imitation Learning and Behavioral Cloning",
+          "learningObjectives": [
+            "Understand the core concepts of imitation learning and behavioral cloning",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "34 min",
+          "keywords": [
+            "imitation",
+            "learning",
+            "and",
+            "behavioral",
+            "cloning"
+          ]
+        },
+        {
+          "id": "chapter-6-6",
+          "title": "Transfer Learning for Robotics",
+          "learningObjectives": [
+            "Understand the core concepts of transfer learning for robotics",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "transfer",
+            "learning",
+            "for",
+            "robotics"
+          ]
+        },
+        {
+          "id": "chapter-6-7",
+          "title": "Sim-to-Real Transfer",
+          "learningObjectives": [
+            "Understand the core concepts of sim-to-real transfer",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "36 min",
+          "keywords": [
+            "sim-to-real",
+            "transfer"
+          ]
+        },
+        {
+          "id": "chapter-6-8",
+          "title": "Vision-Language-Action Models",
+          "learningObjectives": [
+            "Understand the core concepts of vision-language-action models",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "42 min",
+          "keywords": [
+            "vision-language-action",
+            "models"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-7",
+      "title": "Module 7: Autonomous Navigation",
+      "description": "Build fully autonomous mobile robots",
+      "difficulty": "Advanced",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-7-1",
+          "title": "Localization and Map Building",
+          "learningObjectives": [
+            "Understand the core concepts of localization and map building",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "localization",
+            "and",
+            "map",
+            "building"
+          ]
+        },
+        {
+          "id": "chapter-7-2",
+          "title": "AMCL (Adaptive Monte Carlo Localization)",
+          "learningObjectives": [
+            "Understand the core concepts of amcl (adaptive monte carlo localization)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "32 min",
+          "keywords": [
+            "amcl",
+            "(adaptive",
+            "monte",
+            "carlo",
+            "localization)"
+          ]
+        },
+        {
+          "id": "chapter-7-3",
+          "title": "Navigation2 (Nav2) Stack",
+          "learningObjectives": [
+            "Understand the core concepts of navigation2 (nav2) stack",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "38 min",
+          "keywords": [
+            "navigation2",
+            "(nav2)",
+            "stack"
+          ]
+        },
+        {
+          "id": "chapter-7-4",
+          "title": "Global and Local Costmaps",
+          "learningObjectives": [
+            "Understand the core concepts of global and local costmaps",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "global",
+            "and",
+            "local",
+            "costmaps"
+          ]
+        },
+        {
+          "id": "chapter-7-5",
+          "title": "Path Planning with Nav2",
+          "learningObjectives": [
+            "Understand the core concepts of path planning with nav2",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "34 min",
+          "keywords": [
+            "path",
+            "planning",
+            "with",
+            "nav2"
+          ]
+        },
+        {
+          "id": "chapter-7-6",
+          "title": "Dynamic Obstacle Avoidance",
+          "learningObjectives": [
+            "Understand the core concepts of dynamic obstacle avoidance",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "36 min",
+          "keywords": [
+            "dynamic",
+            "obstacle",
+            "avoidance"
+          ]
+        },
+        {
+          "id": "chapter-7-7",
+          "title": "Multi-Robot Coordination",
+          "learningObjectives": [
+            "Understand the core concepts of multi-robot coordination",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "40 min",
+          "keywords": [
+            "multi-robot",
+            "coordination"
+          ]
+        },
+        {
+          "id": "chapter-7-8",
+          "title": "Outdoor Navigation with GPS",
+          "learningObjectives": [
+            "Understand the core concepts of outdoor navigation with gps",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "33 min",
+          "keywords": [
+            "outdoor",
+            "navigation",
+            "with",
+            "gps"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-8",
+      "title": "Module 8: Humanoid Robotics",
+      "description": "Design and control bipedal humanoid robots",
+      "difficulty": "Advanced",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-8-1",
+          "title": "Bipedal Walking Fundamentals",
+          "learningObjectives": [
+            "Understand the core concepts of bipedal walking fundamentals",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "38 min",
+          "keywords": [
+            "bipedal",
+            "walking",
+            "fundamentals"
+          ]
+        },
+        {
+          "id": "chapter-8-2",
+          "title": "Zero Moment Point (ZMP) and Balance Control",
+          "learningObjectives": [
+            "Understand the core concepts of zero moment point (zmp) and balance control",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "zero",
+            "moment",
+            "point",
+            "(zmp)",
+            "and"
+          ]
+        },
+        {
+          "id": "chapter-8-3",
+          "title": "Gait Generation and Pattern Walking",
+          "learningObjectives": [
+            "Understand the core concepts of gait generation and pattern walking",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "36 min",
+          "keywords": [
+            "gait",
+            "generation",
+            "and",
+            "pattern",
+            "walking"
+          ]
+        },
+        {
+          "id": "chapter-8-4",
+          "title": "Whole-Body Control",
+          "learningObjectives": [
+            "Understand the core concepts of whole-body control",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "40 min",
+          "keywords": [
+            "whole-body",
+            "control"
+          ]
+        },
+        {
+          "id": "chapter-8-5",
+          "title": "Humanoid Perception and Vision",
+          "learningObjectives": [
+            "Understand the core concepts of humanoid perception and vision",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "34 min",
+          "keywords": [
+            "humanoid",
+            "perception",
+            "and",
+            "vision"
+          ]
+        },
+        {
+          "id": "chapter-8-6",
+          "title": "Human-Robot Interaction (HRI)",
+          "learningObjectives": [
+            "Understand the core concepts of human-robot interaction (hri)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "32 min",
+          "keywords": [
+            "human-robot",
+            "interaction",
+            "(hri)"
+          ]
+        },
+        {
+          "id": "chapter-8-7",
+          "title": "Manipulation with Humanoid Arms",
+          "learningObjectives": [
+            "Understand the core concepts of manipulation with humanoid arms",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "37 min",
+          "keywords": [
+            "manipulation",
+            "with",
+            "humanoid",
+            "arms"
+          ]
+        },
+        {
+          "id": "chapter-8-8",
+          "title": "Case Studies: Atlas, Optimus, Figure 01",
+          "learningObjectives": [
+            "Understand the core concepts of case studies: atlas, optimus, figure 01",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "42 min",
+          "keywords": [
+            "case",
+            "studies:",
+            "atlas,",
+            "optimus,",
+            "figure"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-9",
+      "title": "Module 9: Advanced Topics & Applications",
+      "description": "Cutting-edge research and specialized applications",
+      "difficulty": "Expert",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-9-1",
+          "title": "Swarm Robotics and Multi-Agent Systems",
+          "learningObjectives": [
+            "Understand the core concepts of swarm robotics and multi-agent systems",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "36 min",
+          "keywords": [
+            "swarm",
+            "robotics",
+            "and",
+            "multi-agent",
+            "systems"
+          ]
+        },
+        {
+          "id": "chapter-9-2",
+          "title": "Soft Robotics and Compliant Mechanisms",
+          "learningObjectives": [
+            "Understand the core concepts of soft robotics and compliant mechanisms",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "34 min",
+          "keywords": [
+            "soft",
+            "robotics",
+            "and",
+            "compliant",
+            "mechanisms"
+          ]
+        },
+        {
+          "id": "chapter-9-3",
+          "title": "Aerial Robotics (Drones and UAVs)",
+          "learningObjectives": [
+            "Understand the core concepts of aerial robotics (drones and uavs)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "38 min",
+          "keywords": [
+            "aerial",
+            "robotics",
+            "(drones",
+            "and",
+            "uavs)"
+          ]
+        },
+        {
+          "id": "chapter-9-4",
+          "title": "Underwater Robotics (ROVs and AUVs)",
+          "learningObjectives": [
+            "Understand the core concepts of underwater robotics (rovs and auvs)",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "underwater",
+            "robotics",
+            "(rovs",
+            "and",
+            "auvs)"
+          ]
+        },
+        {
+          "id": "chapter-9-5",
+          "title": "Medical Robotics and Surgical Systems",
+          "learningObjectives": [
+            "Understand the core concepts of medical robotics and surgical systems",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "40 min",
+          "keywords": [
+            "medical",
+            "robotics",
+            "and",
+            "surgical",
+            "systems"
+          ]
+        },
+        {
+          "id": "chapter-9-6",
+          "title": "Agricultural Robotics and Automation",
+          "learningObjectives": [
+            "Understand the core concepts of agricultural robotics and automation",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "33 min",
+          "keywords": [
+            "agricultural",
+            "robotics",
+            "and",
+            "automation"
+          ]
+        },
+        {
+          "id": "chapter-9-7",
+          "title": "Space Robotics and Planetary Exploration",
+          "learningObjectives": [
+            "Understand the core concepts of space robotics and planetary exploration",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "42 min",
+          "keywords": [
+            "space",
+            "robotics",
+            "and",
+            "planetary",
+            "exploration"
+          ]
+        },
+        {
+          "id": "chapter-9-8",
+          "title": "Ethical AI and Robot Safety Standards",
+          "learningObjectives": [
+            "Understand the core concepts of ethical ai and robot safety standards",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "37 min",
+          "keywords": [
+            "ethical",
+            "ai",
+            "and",
+            "robot",
+            "safety"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-10",
+      "title": "Module 10: Real-World Projects & Future",
+      "description": "Build complete robot systems and explore the future",
+      "difficulty": "Expert",
+      "estimatedTime": "240 minutes",
+      "chapters": [
+        {
+          "id": "chapter-10-1",
+          "title": "Project: Building an Autonomous Delivery Robot",
+          "learningObjectives": [
+            "Understand the core concepts of project: building an autonomous delivery robot",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "50 min",
+          "keywords": [
+            "project:",
+            "building",
+            "an",
+            "autonomous",
+            "delivery"
+          ]
+        },
+        {
+          "id": "chapter-10-2",
+          "title": "Project: Vision-Based Object Picker",
+          "learningObjectives": [
+            "Understand the core concepts of project: vision-based object picker",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "48 min",
+          "keywords": [
+            "project:",
+            "vision-based",
+            "object",
+            "picker"
+          ]
+        },
+        {
+          "id": "chapter-10-3",
+          "title": "Project: Voice-Controlled Assistant Robot",
+          "learningObjectives": [
+            "Understand the core concepts of project: voice-controlled assistant robot",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "45 min",
+          "keywords": [
+            "project:",
+            "voice-controlled",
+            "assistant",
+            "robot"
+          ]
+        },
+        {
+          "id": "chapter-10-4",
+          "title": "Project: SLAM-Based Warehouse Navigator",
+          "learningObjectives": [
+            "Understand the core concepts of project: slam-based warehouse navigator",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "52 min",
+          "keywords": [
+            "project:",
+            "slam-based",
+            "warehouse",
+            "navigator"
+          ]
+        },
+        {
+          "id": "chapter-10-5",
+          "title": "Deploying Robots in Production",
+          "learningObjectives": [
+            "Understand the core concepts of deploying robots in production",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "40 min",
+          "keywords": [
+            "deploying",
+            "robots",
+            "in",
+            "production"
+          ]
+        },
+        {
+          "id": "chapter-10-6",
+          "title": "Fleet Management and Cloud Robotics",
+          "learningObjectives": [
+            "Understand the core concepts of fleet management and cloud robotics",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "38 min",
+          "keywords": [
+            "fleet",
+            "management",
+            "and",
+            "cloud",
+            "robotics"
+          ]
+        },
+        {
+          "id": "chapter-10-7",
+          "title": "The Future of Physical AI",
+          "learningObjectives": [
+            "Understand the core concepts of the future of physical ai",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "35 min",
+          "keywords": [
+            "the",
+            "future",
+            "of",
+            "physical",
+            "ai"
+          ]
+        },
+        {
+          "id": "chapter-10-8",
+          "title": "Career Paths in Robotics and AI",
+          "learningObjectives": [
+            "Understand the core concepts of career paths in robotics and ai",
+            "Apply practical techniques and best practices",
+            "Implement solutions using modern tools and frameworks"
+          ],
+          "readingTime": "30 min",
+          "keywords": [
+            "career",
+            "paths",
+            "in",
+            "robotics",
+            "and"
+          ]
+        }
+      ]
+    }
+  ]
+}

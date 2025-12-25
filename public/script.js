@@ -330,38 +330,73 @@ function logout() {
     }
 }
 
-// Load book structure (metadata only, fast)
+// Load book structure (metadata only, fast) with local fallback
 async function loadBookContent() {
     try {
-        // Use public or protected endpoint based on mode - now using book-structure for faster loading
+        // Try to load from backend API first
         const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-structure` : `${API_BASE_URL}/book-structure`;
         const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
 
-        const response = await fetch(endpoint, { headers });
+        const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(5000) });
 
-        const data = await response.json();
-
-        if (data.success) {
-            // Update book content display (we'll update this when a chapter is selected)
-            console.log('Book structure loaded (chapters will load on-demand)');
-        } else {
-            console.error('Failed to load book structure:', data.message);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                console.log('Book structure loaded from backend');
+                return;
+            }
         }
+        throw new Error('Backend not available');
     } catch (error) {
-        console.error('Error loading book structure:', error);
+        console.log('Backend unavailable, using local metadata:', error.message);
+        // Fallback to local JSON file
+        try {
+            const response = await fetch('./book_metadata.json');
+            const metadata = await response.json();
+            console.log('Book structure loaded from local file');
+            // Store in global variable for other functions to use
+            window.localBookMetadata = metadata;
+        } catch (fallbackError) {
+            console.error('Failed to load local metadata:', fallbackError);
+        }
     }
 }
 
-// Load chapters list (now with modules)
+// Load chapters list (now with modules) with local fallback
 async function loadChapters() {
     try {
-        // Use public or protected endpoint based on mode - using book-structure for faster loading
-        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-structure` : `${API_BASE_URL}/book-structure`;
-        const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
+        let data = null;
 
-        const response = await fetch(endpoint, { headers });
+        // Try to load from backend API first
+        try {
+            const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-structure` : `${API_BASE_URL}/book-structure`;
+            const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
+            const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(5000) });
 
-        const data = await response.json();
+            if (response.ok) {
+                data = await response.json();
+            }
+        } catch (backendError) {
+            console.log('Backend unavailable, using local metadata');
+        }
+
+        // Fallback to local metadata if backend failed
+        if (!data || !data.success) {
+            if (window.localBookMetadata) {
+                data = { success: true, data: { bookContent: window.localBookMetadata } };
+            } else {
+                // Load local JSON file
+                const response = await fetch('./book_metadata.json');
+                const metadata = await response.json();
+                data = { success: true, data: { bookContent: metadata } };
+                window.localBookMetadata = metadata;
+            }
+        }
+
+        // Normalize data structure (backend may return data.data or data.data.bookContent)
+        if (data.data && !data.data.bookContent) {
+            data.data = { bookContent: data.data };
+        }
 
         if (data.success) {
             const chaptersList = document.getElementById('chaptersList');
@@ -863,17 +898,33 @@ async function selectChapter(chapter) {
         let chapterWithContent = chapter;
         if (!chapter.content) {
             console.log(`Fetching content for chapter: ${chapter.id}`);
-            const endpoint = isGuestMode ? `${API_BASE_URL}/public/chapter/${chapter.id}` : `${API_BASE_URL}/chapter/${chapter.id}`;
-            const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
 
-            const response = await fetch(endpoint, { headers });
-            const data = await response.json();
+            // Try backend API first
+            try {
+                const endpoint = isGuestMode ? `${API_BASE_URL}/public/chapter/${chapter.id}` : `${API_BASE_URL}/chapter/${chapter.id}`;
+                const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
 
-            if (data.success) {
-                chapterWithContent = data.data.chapter || data.data;
-                console.log(`Chapter content loaded: ${chapter.title}`);
-            } else {
-                throw new Error(data.message || 'Failed to load chapter content');
+                const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(5000) });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        chapterWithContent = data.data.chapter || data.data;
+                        console.log(`Chapter content loaded from backend: ${chapter.title}`);
+                    }
+                }
+            } catch (backendError) {
+                console.log('Backend unavailable for chapter, using local content');
+            }
+
+            // Fallback to local chapters file if backend failed
+            if (!chapterWithContent.content) {
+                if (!window.localChapters) {
+                    const response = await fetch('./book_chapters.json');
+                    window.localChapters = await response.json();
+                }
+                chapterWithContent = window.localChapters[chapter.id] || chapter;
+                console.log(`Chapter content loaded from local file: ${chapter.title}`);
             }
         }
 
@@ -1021,11 +1072,36 @@ window.addEventListener('click', (e) => {
 // Update dashboard with current progress
 async function updateDashboard() {
     try {
-        // Fetch book structure to get module metadata
-        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-structure` : `${API_BASE_URL}/book-structure`;
-        const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
-        const response = await fetch(endpoint, { headers });
-        const data = await response.json();
+        let data = null;
+
+        // Try to load from backend API first
+        try {
+            const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-structure` : `${API_BASE_URL}/book-structure`;
+            const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
+            const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(5000) });
+            if (response.ok) {
+                data = await response.json();
+            }
+        } catch (backendError) {
+            console.log('Backend unavailable for dashboard, using local metadata');
+        }
+
+        // Fallback to local metadata if backend failed
+        if (!data || !data.success) {
+            if (window.localBookMetadata) {
+                data = { success: true, data: { bookContent: window.localBookMetadata } };
+            } else {
+                const response = await fetch('./book_metadata.json');
+                const metadata = await response.json();
+                data = { success: true, data: { bookContent: metadata } };
+                window.localBookMetadata = metadata;
+            }
+        }
+
+        // Normalize data structure
+        if (data.data && !data.data.bookContent) {
+            data.data = { bookContent: data.data };
+        }
 
         if (!data.success) return;
 

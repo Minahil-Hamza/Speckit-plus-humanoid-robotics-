@@ -2344,40 +2344,54 @@ async function sendChatbotMessage() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     try {
-        // Determine endpoint and headers based on authentication status
-        const endpoint = isGuestMode ? `${API_BASE_URL}/public/chat` : `${API_BASE_URL}/chat`;
-        const headers = {
-            'Content-Type': 'application/json'
-        };
+        let botResponse = null;
 
-        // Add authorization header for authenticated users
-        if (!isGuestMode && authToken) {
-            headers['Authorization'] = `Bearer ${authToken}`;
+        // Try backend API first with timeout
+        try {
+            const endpoint = isGuestMode ? `${API_BASE_URL}/public/chat` : `${API_BASE_URL}/chat`;
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (!isGuestMode && authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    query: message,
+                    language: language,
+                    context: currentChapter ? currentChapter.title : 'General'
+                }),
+                signal: AbortSignal.timeout(8000)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                botResponse = data.answer;
+            }
+        } catch (backendError) {
+            console.log('Backend unavailable for chat, using local chatbot');
         }
 
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                query: message,
-                language: language,
-                context: currentChapter ? currentChapter.title : 'General'
-            })
-        });
-
-        const data = await response.json();
+        // Fallback to local chatbot if backend failed
+        if (!botResponse) {
+            botResponse = getLocalChatbotResponse(message, language);
+        }
 
         // Remove typing indicator
         const typing = document.getElementById('typingIndicator');
         if (typing) typing.remove();
 
-        // Add bot response (use 'answer' field from backend)
+        // Add bot response
         const botMessageDiv = document.createElement('div');
         botMessageDiv.className = 'message bot';
         botMessageDiv.innerHTML = `
             <div class="bot-avatar">🤖</div>
             <div class="message-content">
-                <p>${data.answer || 'Sorry, I could not process your request.'}</p>
+                <p>${botResponse}</p>
             </div>
         `;
         messagesContainer.appendChild(botMessageDiv);
@@ -2395,15 +2409,104 @@ async function sendChatbotMessage() {
         // Add error message
         const errorMessageDiv = document.createElement('div');
         errorMessageDiv.className = 'message bot';
+        const errorMsg = language === 'urdu'
+            ? 'معذرت، میں ابھی آپ کی مدد نہیں کر سکتا۔ براہ کرم دوبارہ کوشش کریں۔'
+            : 'I\'m sorry, I\'m having trouble right now. Please try again.';
         errorMessageDiv.innerHTML = `
             <div class="bot-avatar">🤖</div>
             <div class="message-content">
-                <p>I'm sorry, I'm having trouble connecting right now. Please try again in a moment.</p>
+                <p>${errorMsg}</p>
             </div>
         `;
         messagesContainer.appendChild(errorMessageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+}
+
+// Local chatbot response generator (works offline with Urdu support)
+function getLocalChatbotResponse(message, language) {
+    const lowerMessage = message.toLowerCase();
+
+    // Responses in both languages
+    const responses = {
+        // Greetings
+        greeting: {
+            english: "Hello! I'm your AI Robotics Assistant. I can help you with robotics, ROS2, computer vision, machine learning, and more. How can I assist you today?",
+            urdu: "السلام علیکم! میں آپ کا AI روبوٹکس اسسٹنٹ ہوں۔ میں آپ کی روبوٹکس، ROS2، کمپیوٹر ویژن، مشین لرننگ اور بہت کچھ میں مدد کر سکتا ہوں۔ میں آج آپ کی کیسے مدد کروں؟"
+        },
+        // About the book
+        aboutBook: {
+            english: "This book covers Physical AI & Robotics comprehensively across 10 modules and 80 chapters. It includes topics like ROS2, Computer Vision, Machine Learning, Autonomous Navigation, Humanoid Robotics, and real-world projects. Perfect for learners from beginner to expert level!",
+            urdu: "یہ کتاب 10 ماڈیولز اور 80 ابواب میں فزیکل AI اور روبوٹکس کا جامع احاطہ کرتی ہے۔ اس میں ROS2، کمپیوٹر ویژن، مشین لرننگ، خودکار نیویگیشن، ہیومنائڈ روبوٹکس، اور حقیقی منصوبے شامل ہیں۔ ابتدائی سے ماہر سطح تک سیکھنے والوں کے لیے بہترین!"
+        },
+        // ROS2
+        ros2: {
+            english: "ROS2 (Robot Operating System 2) is a flexible framework for robot software development. It provides tools and libraries for building robot applications including: message passing, package management, hardware abstraction, and distributed computing. Our Module 3 covers ROS2 in depth!",
+            urdu: "ROS2 روبوٹ سافٹ ویئر کی ترقی کے لیے ایک لچکدار فریم ورک ہے۔ یہ روبوٹ ایپلیکیشنز بنانے کے لیے ٹولز اور لائبریریاں فراہم کرتا ہے بشمول: میسج پاسنگ، پیکیج مینجمنٹ، ہارڈویئر ایبسٹریکشن، اور ڈسٹریبیوٹڈ کمپیوٹنگ۔ ہمارا ماڈیول 3 ROS2 کا گہرائی سے احاطہ کرتا ہے!"
+        },
+        // Computer Vision
+        vision: {
+            english: "Computer Vision enables robots to see and understand their environment. Key topics include: image processing, object detection (YOLO, R-CNN), semantic segmentation, 3D vision, depth estimation, SLAM, and real-time processing. Check out Module 4 for detailed coverage!",
+            urdu: "کمپیوٹر ویژن روبوٹس کو اپنے ماحول کو دیکھنے اور سمجھنے کے قابل بناتا ہے۔ اہم موضوعات میں شامل ہیں: تصویری پروسیسنگ، آبجیکٹ ڈیٹیکشن (YOLO، R-CNN)، سیمانٹک سیگمنٹیشن، 3D ویژن، گہرائی کا تخمینہ، SLAM، اور ریئل ٹائم پروسیسنگ۔ تفصیلی احاطہ کے لیے ماڈیول 4 دیکھیں!"
+        },
+        // Machine Learning
+        ml: {
+            english: "Machine Learning for Robotics covers supervised learning, reinforcement learning (DQN, PPO, SAC), imitation learning, transfer learning, and sim-to-real transfer. Module 6 provides in-depth coverage of ML techniques for robot intelligence.",
+            urdu: "روبوٹکس کے لیے مشین لرننگ میں سپروائزڈ لرننگ، ری انفورسمنٹ لرننگ (DQN، PPO، SAC)، امیٹیشن لرننگ، ٹرانسفر لرننگ، اور سم ٹو ریئل ٹرانسفر شامل ہیں۔ ماڈیول 6 روبوٹ انٹیلیجنس کے لیے ML تکنیکوں کا گہرائی سے احاطہ فراہم کرتا ہے۔"
+        },
+        // Modules
+        modules: {
+            english: "The book has 10 modules: 1) Introduction to Robotics & AI, 2) Robot Hardware & Components, 3) ROS2 Deep Dive, 4) Computer Vision, 5) Motion Planning & Control, 6) Machine Learning, 7) Autonomous Navigation, 8) Humanoid Robotics, 9) Advanced Topics, 10) Real-World Projects.",
+            urdu: "کتاب میں 10 ماڈیولز ہیں: 1) روبوٹکس اور AI کا تعارف، 2) روبوٹ ہارڈویئر اور اجزاء، 3) ROS2 گہرائی میں، 4) کمپیوٹر ویژن، 5) موشن پلاننگ اور کنٹرول، 6) مشین لرننگ، 7) خودکار نیویگیشن، 8) ہیومنائڈ روبوٹکس، 9) جدید موضوعات، 10) حقیقی منصوبے۔"
+        },
+        // Chapters
+        chapters: {
+            english: "This comprehensive book contains 80 detailed chapters covering everything from robotics basics to advanced topics like humanoid robotics and real-world projects. Each chapter includes practical examples, code snippets, and hands-on exercises.",
+            urdu: "اس جامع کتاب میں 80 تفصیلی ابواب ہیں جو روبوٹکس کی بنیادی باتوں سے لے کر ہیومنائڈ روبوٹکس اور حقیقی منصوبوں جیسے جدید موضوعات تک ہر چیز کا احاطہ کرتے ہیں۔ ہر باب میں عملی مثالیں، کوڈ سنیپٹس، اور ہینڈز آن مشقیں شامل ہیں۔"
+        },
+        // Navigation
+        navigation: {
+            english: "Autonomous Navigation (Module 7) covers localization, map building, AMCL, Navigation2 stack, path planning, obstacle avoidance, multi-robot coordination, and GPS navigation. Essential skills for building autonomous mobile robots!",
+            urdu: "خودکار نیویگیشن (ماڈیول 7) میں لوکلائزیشن، نقشہ سازی، AMCL، نیویگیشن2 اسٹیک، پاتھ پلاننگ، رکاوٹوں سے بچنا، ملٹی روبوٹ کوآرڈینیشن، اور GPS نیویگیشن شامل ہیں۔ خودکار موبائل روبوٹس بنانے کے لیے ضروری مہارتیں!"
+        },
+        // Humanoid
+        humanoid: {
+            english: "Humanoid Robotics (Module 8) teaches bipedal walking, ZMP balance control, gait generation, whole-body control, perception, human-robot interaction, and manipulation. Learn how robots like Atlas, Optimus, and Figure 01 work!",
+            urdu: "ہیومنائڈ روبوٹکس (ماڈیول 8) دو پیروں پر چلنا، ZMP بیلنس کنٹرول، چال کی تخلیق، پورے جسم کا کنٹرول، ادراک، انسان-روبوٹ تعامل، اور ہیرا پھیری سکھاتا ہے۔ جانیں کہ Atlas، Optimus، اور Figure 01 جیسے روبوٹس کیسے کام کرتے ہیں!"
+        },
+        // Default response
+        default: {
+            english: "I can help you with questions about robotics, ROS2, computer vision, machine learning, autonomous navigation, humanoid robotics, and more. Try asking about specific topics like 'What is ROS2?' or 'Tell me about computer vision'. What would you like to know?",
+            urdu: "میں روبوٹکس، ROS2، کمپیوٹر ویژن، مشین لرننگ، خودکار نیویگیشن، ہیومنائڈ روبوٹکس، اور مزید کے بارے میں سوالات میں آپ کی مدد کر سکتا ہوں۔ مخصوص موضوعات کے بارے میں پوچھنے کی کوشش کریں جیسے 'ROS2 کیا ہے؟' یا 'مجھے کمپیوٹر ویژن کے بارے میں بتائیں'۔ آپ کیا جاننا چاہیں گے؟"
+        }
+    };
+
+    // Determine which response to return based on message content
+    let responseKey = 'default';
+
+    if (lowerMessage.match(/hi|hello|salam|السلام علیکم|ہیلو/)) {
+        responseKey = 'greeting';
+    } else if (lowerMessage.match(/book|کتاب|modules|ماڈیولز|overview/)) {
+        if (lowerMessage.match(/module|ماڈیول/)) {
+            responseKey = 'modules';
+        } else if (lowerMessage.match(/chapter|باب/)) {
+            responseKey = 'chapters';
+        } else {
+            responseKey = 'aboutBook';
+        }
+    } else if (lowerMessage.match(/ros2|ros 2|robot operating system/)) {
+        responseKey = 'ros2';
+    } else if (lowerMessage.match(/vision|computer vision|opencv|yolo|کمپیوٹر ویژن|بصارت/)) {
+        responseKey = 'vision';
+    } else if (lowerMessage.match(/machine learning|ml|deep learning|reinforcement|مشین لرننگ/)) {
+        responseKey = 'ml';
+    } else if (lowerMessage.match(/navigation|nav2|autonomous|خودکار|نیویگیشن/)) {
+        responseKey = 'navigation';
+    } else if (lowerMessage.match(/humanoid|bipedal|atlas|optimus|figure|ہیومنائڈ/)) {
+        responseKey = 'humanoid';
+    }
+
+    return responses[responseKey][language];
 }
 
 // Handle enter key in chatbot input

@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'https://backend-d06vki2fa-minahil-hamzas-projects.vercel.app/api';
 
 console.log('Script loaded! Version 2.1 - Author Bio Displayed!');
 console.log('API URL:', API_BASE_URL);

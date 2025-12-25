@@ -1041,42 +1041,14 @@ app.post('/api/chat', protect, async (req, res) => {
     }
 });
 
-// Helper function to load book content lazily (without loading all chapter content)
+// Helper function to load book structure (metadata only, fast)
 function getBookStructure() {
     try {
-        // Load the full book content
-        const fullContent = require('./book_content');
-
-        // Extract only the structure (metadata) without full chapter content
-        const structure = {
-            title: fullContent.title,
-            description: fullContent.description,
-            author: fullContent.author,
-            authorBio: fullContent.authorBio,
-            publicationDate: fullContent.publicationDate,
-            version: fullContent.version,
-            totalModules: fullContent.totalModules,
-            totalChapters: fullContent.totalChapters,
-            modules: fullContent.modules.map(module => ({
-                id: module.id,
-                title: module.title,
-                description: module.description,
-                difficulty: module.difficulty,
-                estimatedTime: module.estimatedTime,
-                chapters: module.chapters.map(chapter => ({
-                    id: chapter.id,
-                    title: chapter.title,
-                    learningObjectives: chapter.learningObjectives,
-                    readingTime: chapter.readingTime,
-                    keywords: chapter.keywords
-                    // Note: we exclude the full 'content' field here to keep response small
-                }))
-            }))
-        };
-
-        return structure;
+        // Load only the metadata file (45KB vs 620KB+)
+        const metadata = require('./book_metadata');
+        return metadata;
     } catch (error) {
-        console.error('Error loading book structure:', error);
+        console.error('Error loading book metadata:', error);
         throw error;
     }
 }

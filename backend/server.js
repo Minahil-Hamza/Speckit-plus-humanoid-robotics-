@@ -7,12 +7,25 @@ const OpenAI = require('openai');
 const fs = require('fs');
 const path = require('path');
 
-// Redirect console output to a log file
-const logStream = fs.createWriteStream(path.join(__dirname, 'translation.log'), { flags: 'a' });
+// Redirect console output to a log file (only in development)
+// In production/serverless (Vercel), filesystem is read-only, so skip file logging
+let logStream = null;
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    logStream = fs.createWriteStream(path.join(__dirname, 'translation.log'), { flags: 'a' });
+  } catch (error) {
+    console.error('Failed to create log file:', error.message);
+  }
+}
+
 const logToFile = (message) => {
-  logStream.write(`${new Date().toISOString()} - ${message}\n`);
-  process.stdout.write(`${new Date().toISOString()} - ${message}\n`);
+  const timestamp = new Date().toISOString();
+  if (logStream) {
+    logStream.write(`${timestamp} - ${message}\n`);
+  }
+  process.stdout.write(`${timestamp} - ${message}\n`);
 };
+
 console.log = (message, ...optionalParams) => {
     logToFile(message);
 };
@@ -1619,24 +1632,28 @@ app.use((req, res) => {
   });
 });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+// Graceful shutdown (disabled for serverless - Vercel handles this)
+// process.on('SIGINT', async () => {
+//   process.exit(0);
+// });
 
-process.on('SIGTERM', async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+// process.on('SIGTERM', async () => {
+//   process.exit(0);
+// });
 
-// Start server
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Database: PostgreSQL (Neon DB)`);
+// Start server only in development (not in Vercel serverless)
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5001;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database: PostgreSQL (Neon DB)`);
+    console.log("Chatbot ready (supporting Claude 3.5 Sonnet, OpenAI GPT-4o, and Google Gemini)");
+  });
+} else {
+  console.log('Running in serverless mode (Vercel)');
   console.log("Chatbot ready (supporting Claude 3.5 Sonnet, OpenAI GPT-4o, and Google Gemini)");
-});
+}
 
+// Export app for Vercel serverless
 module.exports = app;

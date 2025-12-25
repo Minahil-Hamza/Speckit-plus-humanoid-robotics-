@@ -178,26 +178,32 @@ function switchTab(tab) {
 
 // Register function
 async function register() {
+    console.log('✅ Register button clicked!');
+    const name = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
+    const language = document.getElementById('registerLanguage').value;
+
+    console.log('Form values:', { name, email, password: '***', language });
+
+    if (!name || !email || !password) {
+        alert('⚠️ Please fill in all fields');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        alert('⚠️ Passwords do not match!');
+        return;
+    }
+
+    // Show loading state
+    const registerBtn = event.target;
+    const originalText = registerBtn.innerHTML;
+    registerBtn.innerHTML = '<span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Registering...';
+    registerBtn.disabled = true;
+
     try {
-        console.log('✅ Register button clicked!');
-        const name = document.getElementById('registerName').value;
-        const email = document.getElementById('registerEmail').value;
-        const password = document.getElementById('registerPassword').value;
-        const confirmPassword = document.getElementById('registerConfirmPassword').value;
-        const language = document.getElementById('registerLanguage').value;
-
-        console.log('Form values:', { name, email, password: '***', language });
-
-        if (!name || !email || !password) {
-            alert('Please fill in all fields');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            alert('Passwords do not match!');
-            return;
-        }
-
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: {
@@ -208,35 +214,45 @@ async function register() {
                 email,
                 password
             }),
-            signal: AbortSignal.timeout(8000)
+            signal: AbortSignal.timeout(5000)
         });
 
         const data = await response.json();
 
         if (data.success) {
-            alert('Registration successful! Please log in.');
+            // Restore button
+            registerBtn.innerHTML = originalText;
+            registerBtn.disabled = false;
+
+            alert('✅ Registration successful! Please log in.');
             switchTab('login');
             // Store language preference
             localStorage.setItem('preferredLanguage', language);
         } else {
-            alert('Registration failed: ' + (data.message || 'Unknown error'));
+            // Restore button
+            registerBtn.innerHTML = originalText;
+            registerBtn.disabled = false;
+
+            alert('❌ Registration failed: ' + (data.message || 'Unknown error'));
         }
     } catch (error) {
         console.error('Registration error:', error);
 
-        // Show user-friendly message about backend unavailability
-        const useGuest = confirm(
-            '⚠️ Registration server is currently unavailable.\n\n' +
-            'Would you like to continue as a Guest instead?\n\n' +
-            '✓ Guest mode gives you full access to all 10 modules and 80 chapters\n' +
-            '✓ AI chatbot with Urdu support\n' +
-            '✓ Progress tracking (saved locally)\n\n' +
-            'Click OK to start learning now, or Cancel to try registration later.'
-        );
+        // Restore button
+        registerBtn.innerHTML = originalText;
+        registerBtn.disabled = false;
 
-        if (useGuest) {
+        // Automatically start guest mode with notification
+        const message = error.name === 'TimeoutError'
+            ? '⚠️ Registration server is taking too long to respond.\n\nStarting Guest Mode automatically...\n\n✓ Full access to all 10 modules and 80 chapters\n✓ AI chatbot with Urdu support\n✓ Progress tracking (saved locally)'
+            : '⚠️ Cannot connect to registration server.\n\nStarting Guest Mode automatically...\n\n✓ Full access to all 10 modules and 80 chapters\n✓ AI chatbot with Urdu support\n✓ Progress tracking (saved locally)';
+
+        alert(message);
+
+        // Automatically start guest mode
+        setTimeout(() => {
             startGuestMode();
-        }
+        }, 500);
     }
 }
 
@@ -2481,12 +2497,18 @@ async function login() {
     const language = languageSelect ? languageSelect.value : 'english';
 
     if (!email || !password) {
-        alert('Please enter both email and password');
+        alert('⚠️ Please enter both email and password');
         return;
     }
 
+    // Show loading state
+    const loginBtn = event.target;
+    const originalText = loginBtn.innerHTML;
+    loginBtn.innerHTML = '<span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Logging in...';
+    loginBtn.disabled = true;
+
     try {
-        // Try to login with backend (with timeout)
+        // Try to login with backend (with 5-second timeout for faster feedback)
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: {
@@ -2496,7 +2518,7 @@ async function login() {
                 email,
                 password
             }),
-            signal: AbortSignal.timeout(8000)
+            signal: AbortSignal.timeout(5000)
         });
 
         const data = await response.json();
@@ -2519,8 +2541,8 @@ async function login() {
             document.getElementById('userName').textContent = currentUser.name;
 
             // Load book content and chapters
-            loadBookContent();
-            loadChapters();
+            await loadBookContent();
+            await loadChapters();
             loadProgress();
 
             // Show chatbot button
@@ -2534,24 +2556,30 @@ async function login() {
                 origin: { y: 0.6 }
             });
         } else {
-            alert('Login failed: ' + (data.message || 'Invalid email or password'));
+            // Restore button
+            loginBtn.innerHTML = originalText;
+            loginBtn.disabled = false;
+
+            alert('❌ Login failed: ' + (data.message || 'Invalid email or password'));
         }
     } catch (error) {
         console.error('Login error:', error);
 
-        // Show user-friendly message about backend unavailability
-        const useGuest = confirm(
-            '⚠️ Authentication server is currently unavailable.\n\n' +
-            'Would you like to continue as a Guest instead?\n\n' +
-            '✓ Guest mode gives you full access to all 10 modules and 80 chapters\n' +
-            '✓ AI chatbot with Urdu support\n' +
-            '✓ Progress tracking (saved locally)\n\n' +
-            'Click OK to start learning now, or Cancel to try login later.'
-        );
+        // Restore button
+        loginBtn.innerHTML = originalText;
+        loginBtn.disabled = false;
 
-        if (useGuest) {
+        // Automatically start guest mode with notification
+        const message = error.name === 'TimeoutError'
+            ? '⚠️ Authentication server is taking too long to respond.\n\nStarting Guest Mode automatically...\n\n✓ Full access to all 10 modules and 80 chapters\n✓ AI chatbot with Urdu support\n✓ Progress tracking (saved locally)'
+            : '⚠️ Cannot connect to authentication server.\n\nStarting Guest Mode automatically...\n\n✓ Full access to all 10 modules and 80 chapters\n✓ AI chatbot with Urdu support\n✓ Progress tracking (saved locally)';
+
+        alert(message);
+
+        // Automatically start guest mode
+        setTimeout(() => {
             startGuestMode();
-        }
+        }, 500);
     }
 }
 // ========================================

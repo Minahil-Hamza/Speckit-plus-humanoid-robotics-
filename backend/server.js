@@ -1,9 +1,24 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
+const dotenv =require('dotenv');
 const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const OpenAI = require('openai');
+const fs = require('fs');
+const path = require('path');
+
+// Redirect console output to a log file
+const logStream = fs.createWriteStream(path.join(__dirname, 'translation.log'), { flags: 'a' });
+const logToFile = (message) => {
+  logStream.write(`${new Date().toISOString()} - ${message}\n`);
+  process.stdout.write(`${new Date().toISOString()} - ${message}\n`);
+};
+console.log = (message, ...optionalParams) => {
+    logToFile(message);
+};
+console.error = (message, ...optionalParams) => {
+    logToFile(`ERROR: ${message}`);
+};
 
 // Load environment variables
 dotenv.config();
@@ -68,6 +83,11 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
+
+    // Allow all localhost origins
+    if (origin && origin.startsWith('http://localhost')) {
+      return callback(null, true);
+    }
 
     const allowedOrigins = [
       'http://localhost:3000',
@@ -481,122 +501,215 @@ function getResponse(query) {
 
 // Function to translate text to Urdu
 async function translateToUrdu(text, aiProvider = null) {
+    console.log(`[translateToUrdu] Starting translation for text: "${text.substring(0, 50)}..."`);
     try {
-        // Create a prompt for translation
         const translationPrompt = `Translate the following text to Urdu (Pakistan). Only provide the translation and nothing else:\n\n${text}`;
 
-        // Try to use the best available AI provider for translation
         if (aiProvider === 'claude' && anthropic) {
             try {
+                console.log('[translateToUrdu] Attempting translation with Claude...');
                 const message = await anthropic.messages.create({
                     model: "claude-3-5-sonnet-20241022",
                     max_tokens: 1024,
                     system: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else.",
-                    messages: [
-                        {
-                            role: "user",
-                            content: translationPrompt
-                        }
-                    ]
+                    messages: [{ role: "user", content: translationPrompt }]
                 });
+                console.log('[translateToUrdu] Claude translation successful.');
                 return message.content[0].text;
             } catch (error) {
-                console.error('Claude translation failed:', error);
+                console.error('[translateToUrdu] Claude translation failed:', error);
             }
         } else if (aiProvider === 'openai' && openai) {
             try {
+                console.log('[translateToUrdu] Attempting translation with OpenAI...');
                 const chatCompletion = await openai.chat.completions.create({
                     model: "gpt-4o",
                     messages: [
-                        {
-                            role: "system",
-                            content: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else."
-                        },
-                        {
-                            role: "user",
-                            content: translationPrompt
-                        }
+                        { role: "system", content: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else." },
+                        { role: "user", content: translationPrompt }
                     ],
                     max_tokens: 1024,
                     temperature: 0.3,
                 });
+                console.log('[translateToUrdu] OpenAI translation successful.');
                 return chatCompletion.choices[0].message.content;
             } catch (error) {
-                console.error('OpenAI translation failed:', error);
+                console.error('[translateToUrdu] OpenAI translation failed:', error);
             }
         } else if (aiProvider === 'gemini' && gemini) {
             try {
+                console.log('[translateToUrdu] Attempting translation with Gemini...');
                 const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
                 const result = await model.generateContent(translationPrompt);
                 const response = await result.response;
+                console.log('[translateToUrdu] Gemini translation successful.');
                 return response.text();
             } catch (error) {
-                console.error('Gemini translation failed:', error);
+                console.error('[translateToUrdu] Gemini translation failed:', error);
             }
         }
 
-        // If specific provider fails or isn't specified, try them in order of preference
+        console.log('[translateToUrdu] No specific provider requested or the requested one failed. Trying providers in order of preference.');
         const providers = ['claude', 'openai', 'gemini'];
         for (const provider of providers) {
             if (provider === 'claude' && anthropic) {
                 try {
+                    console.log('[translateToUrdu] Trying Claude as a fallback...');
                     const message = await anthropic.messages.create({
                         model: "claude-3-5-sonnet-20241022",
                         max_tokens: 1024,
                         system: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else.",
-                        messages: [
-                            {
-                                role: "user",
-                                content: translationPrompt
-                            }
-                        ]
+                        messages: [{ role: "user", content: translationPrompt }]
                     });
+                    console.log('[translateToUrdu] Claude fallback translation successful.');
                     return message.content[0].text;
                 } catch (error) {
-                    console.error(`Claude translation failed:`, error);
+                    console.error('[translateToUrdu] Claude fallback failed:', error);
                     continue;
                 }
             } else if (provider === 'openai' && openai) {
                 try {
+                    console.log('[translateToUrdu] Trying OpenAI as a fallback...');
                     const chatCompletion = await openai.chat.completions.create({
                         model: "gpt-4o",
                         messages: [
-                            {
-                                role: "system",
-                                content: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else."
-                            },
-                            {
-                                role: "user",
-                                content: translationPrompt
-                            }
+                            { role: "system", content: "You are a professional translator. Translate text accurately to Urdu while preserving the meaning and context. Only provide the translation and nothing else." },
+                            { role: "user", content: translationPrompt }
                         ],
                         max_tokens: 1024,
                         temperature: 0.3,
                     });
+                    console.log('[translateToUrdu] OpenAI fallback translation successful.');
                     return chatCompletion.choices[0].message.content;
                 } catch (error) {
-                    console.error(`OpenAI translation failed:`, error);
+                    console.error('[translateToUrdu] OpenAI fallback failed:', error);
                     continue;
                 }
             } else if (provider === 'gemini' && gemini) {
                 try {
+                    console.log('[translateToUrdu] Trying Gemini as a fallback...');
                     const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
                     const result = await model.generateContent(translationPrompt);
                     const response = await result.response;
+                    console.log('[translateToUrdu] Gemini fallback translation successful.');
                     return response.text();
                 } catch (error) {
-                    console.error(`Gemini translation failed:`, error);
+                    console.error('[translateToUrdu] Gemini fallback failed:', error);
                     continue;
                 }
             }
         }
 
-        // If all AI providers fail, return the original text
-        return text;
+        console.log('[translateToUrdu] All translation providers failed. Using basic dictionary translation.');
+        return basicUrduTranslation(text);
     } catch (error) {
-        console.error('Translation function error:', error);
-        return text; // Return original text if translation fails
+        console.error('[translateToUrdu] A critical error occurred in the translation function:', error);
+        return basicUrduTranslation(text);
     }
+}
+
+// Basic Urdu translation using dictionary for common robotics terms
+function basicUrduTranslation(text) {
+    // Common robotics and AI terms dictionary
+    const dictionary = {
+        'robot': 'روبوٹ',
+        'robotics': 'روبوٹکس',
+        'artificial intelligence': 'مصنوعی ذہانت',
+        'AI': 'اے آئی',
+        'ROS': 'آر او ایس',
+        'sensor': 'سینسر',
+        'actuator': 'ایکچویٹر',
+        'machine learning': 'مشین لرننگ',
+        'deep learning': 'ڈیپ لرننگ',
+        'computer vision': 'کمپیوٹر ویژن',
+        'neural network': 'نیورل نیٹ ورک',
+        'algorithm': 'الگورتھم',
+        'control': 'کنٹرول',
+        'system': 'سسٹم',
+        'programming': 'پروگرامنگ',
+        'software': 'سافٹ ویئر',
+        'hardware': 'ہارڈ ویئر',
+        'simulation': 'سمیولیشن',
+        'autonomous': 'خود مختار',
+        'navigation': 'نیویگیشن',
+        'Hello': 'ہیلو',
+        'Hi': 'سلام',
+        'How can I help': 'میں کیسے مدد کر سکتا ہوں',
+        'Thank you': 'شکریہ',
+        'Welcome': 'خوش آمدید',
+        'Physical AI': 'فزیکل اے آئی',
+        'I am': 'میں ہوں',
+        'chatbot': 'چیٹ بوٹ',
+        'assistant': 'اسسٹنٹ',
+        'for': 'کے لیے',
+        'the': '',
+        'a': 'ایک',
+        'and': 'اور',
+        'or': 'یا',
+        'can': 'کر سکتا',
+        'help': 'مدد',
+        'you': 'آپ',
+        'your': 'آپ کا',
+        'understand': 'سمجھنے میں',
+        'explain': 'وضاحت کریں',
+        'learn': 'سیکھیں',
+        'course': 'کورس',
+        'question': 'سوال',
+        'answer': 'جواب',
+        'Please': 'براہ کرم',
+        'try': 'کوشش کریں',
+        'again': 'دوبارہ',
+        'later': 'بعد میں',
+        'Sorry': 'معذرت',
+        'error': 'خرابی',
+        'problem': 'مسئلہ'
+    };
+
+    // Common complete phrase translations
+    const phrases = {
+        "I'm a chatbot assistant for the Physical AI & Robotics course":
+            'میں فزیکل اے آئی اور روبوٹکس کورس کا چیٹ بوٹ اسسٹنٹ ہوں',
+        "How can I help you?":
+            'میں آپ کی کیسے مدد کر سکتا ہوں؟',
+        "I can help you understand":
+            'میں آپ کو سمجھنے میں مدد کر سکتا ہوں',
+        "Please ask me a question":
+            'براہ کرم مجھ سے ایک سوال پوچھیں',
+        "I'm here to help":
+            'میں یہاں مدد کے لیے موجود ہوں',
+        "Welcome to the robotics course":
+            'روبوٹکس کورس میں خوش آمدید',
+        "Let me explain":
+            'میں وضاحت کرتا ہوں',
+        "Thank you for your question":
+            'آپ کے سوال کا شکریہ',
+        "Sorry, I couldn't process your request":
+            'معذرت، میں آپ کی درخواست پر کارروائی نہیں کر سکا',
+        "Please try again":
+            'براہ کرم دوبارہ کوشش کریں',
+        "I'm having trouble connecting":
+            'مجھے رابطہ قائم کرنے میں دشواری ہو رہی ہے',
+        "I'm sorry":
+            'مجھے افسوس ہے',
+        "Could you please rephrase":
+            'کیا آپ براہ کرم دوبارہ کہہ سکتے ہیں'
+    };
+
+    // Check for complete phrase match first
+    for (const [english, urdu] of Object.entries(phrases)) {
+        if (text.includes(english)) {
+            text = text.replace(english, urdu);
+        }
+    }
+
+    // Replace individual words
+    for (const [english, urdu] of Object.entries(dictionary)) {
+        // Case-insensitive replacement
+        const regex = new RegExp('\\b' + english + '\\b', 'gi');
+        text = text.replace(regex, urdu);
+    }
+
+    return text;
 }
 
 // Protect the chat endpoint with authentication
@@ -1084,6 +1197,231 @@ app.put('/api/book-progress', protect, async (req, res) => {
     }
 });
 
+
+// AI-Powered MCQ Generation Endpoint
+app.post('/api/generate-mcqs', protect, async (req, res) => {
+    const { chapterId, chapterContent, numberOfQuestions = 5 } = req.body;
+
+    if (!chapterContent) {
+        return res.status(400).json({
+            success: false,
+            message: 'Chapter content is required'
+        });
+    }
+
+    console.log(`Generating ${numberOfQuestions} MCQs for chapter: ${chapterId} for user: ${req.user.email}`);
+
+    try {
+        const mcqPrompt = `Based on the following educational content, generate ${numberOfQuestions} multiple-choice questions (MCQs) to test comprehension. Each question should have 4 options (A, B, C, D) with only one correct answer.
+
+Content:
+${chapterContent.substring(0, 3000)}
+
+Return the response in this exact JSON format:
+{
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": {
+        "A": "Option A text",
+        "B": "Option B text",
+        "C": "Option C text",
+        "D": "Option D text"
+      },
+      "correctAnswer": "A",
+      "explanation": "Brief explanation of why this is correct"
+    }
+  ]
+}
+
+Important: Make questions that test deep understanding, not just memorization.`;
+
+        let mcqResponse = null;
+
+        // Try OpenAI first
+        if (openai) {
+            try {
+                console.log('Generating MCQs with OpenAI...');
+                const chatCompletion = await openai.chat.completions.create({
+                    model: "gpt-4o",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are an expert educator creating assessment questions. Always return valid JSON only, no markdown or extra text."
+                        },
+                        {
+                            role: "user",
+                            content: mcqPrompt
+                        }
+                    ],
+                    max_tokens: 2000,
+                    temperature: 0.7,
+                    response_format: { type: "json_object" }
+                });
+
+                mcqResponse = JSON.parse(chatCompletion.choices[0].message.content);
+                console.log('MCQs generated successfully with OpenAI');
+            } catch (openaiError) {
+                console.error('OpenAI MCQ generation failed:', openaiError.message);
+            }
+        }
+
+        // Fallback to Claude if OpenAI fails
+        if (!mcqResponse && anthropic) {
+            try {
+                console.log('Generating MCQs with Claude...');
+                const message = await anthropic.messages.create({
+                    model: "claude-3-5-sonnet-20241022",
+                    max_tokens: 2000,
+                    system: "You are an expert educator creating assessment questions. Always return valid JSON only.",
+                    messages: [{ role: "user", content: mcqPrompt }]
+                });
+
+                const responseText = message.content[0].text;
+                mcqResponse = JSON.parse(responseText);
+                console.log('MCQs generated successfully with Claude');
+            } catch (claudeError) {
+                console.error('Claude MCQ generation failed:', claudeError.message);
+            }
+        }
+
+        // Fallback questions if all AI fails
+        if (!mcqResponse) {
+            console.log('Using fallback MCQs');
+            mcqResponse = {
+                questions: [
+                    {
+                        question: "What is the main focus of this chapter?",
+                        options: {
+                            A: "Understanding fundamental concepts",
+                            B: "Memorizing definitions",
+                            C: "Skipping important details",
+                            D: "Ignoring practical applications"
+                        },
+                        correctAnswer: "A",
+                        explanation: "The chapter focuses on understanding fundamental concepts to build a strong foundation."
+                    },
+                    {
+                        question: "Why is this topic important in robotics?",
+                        options: {
+                            A: "It's not important",
+                            B: "It forms the basis for advanced applications",
+                            C: "It's only for theory",
+                            D: "It's outdated"
+                        },
+                        correctAnswer: "B",
+                        explanation: "This topic is crucial as it forms the foundation for more advanced robotic applications."
+                    }
+                ]
+            };
+        }
+
+        res.json({
+            success: true,
+            mcqs: mcqResponse.questions,
+            chapterId: chapterId,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Critical error in MCQ generation:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate MCQs',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Submit Assessment Endpoint
+app.post('/api/submit-assessment', protect, async (req, res) => {
+    const { chapterId, answers, totalQuestions, timeSpent } = req.body;
+
+    if (!chapterId || !answers) {
+        return res.status(400).json({
+            success: false,
+            message: 'Chapter ID and answers are required'
+        });
+    }
+
+    try {
+        // Calculate score
+        const correctAnswers = answers.filter(a => a.isCorrect).length;
+        const score = Math.round((correctAnswers / totalQuestions) * 100);
+
+        const assessment = {
+            chapterId,
+            userId: req.user.id,
+            score,
+            correctAnswers,
+            totalQuestions,
+            answers,
+            timeSpent,
+            completedAt: new Date().toISOString()
+        };
+
+        // Find user and store assessment
+        const userArray = Array.isArray(global.users) ? global.users : users;
+        const user = userArray.find(u => u.id === req.user.id);
+
+        if (user) {
+            if (!user.assessments) {
+                user.assessments = [];
+            }
+            user.assessments.push(assessment);
+
+            // Mark chapter as completed if score >= 70%
+            if (score >= 70 && !user.completedModules.includes(chapterId)) {
+                user.completedModules.push(chapterId);
+            }
+        }
+
+        console.log(`Assessment submitted for ${req.user.email}: ${score}% on ${chapterId}`);
+
+        res.json({
+            success: true,
+            assessment: {
+                score,
+                correctAnswers,
+                totalQuestions,
+                passed: score >= 70,
+                completedAt: assessment.completedAt
+            }
+        });
+    } catch (error) {
+        console.error('Error submitting assessment:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to submit assessment'
+        });
+    }
+});
+
+// Get Assessment History
+app.get('/api/assessments', protect, async (req, res) => {
+    try {
+        const userArray = Array.isArray(global.users) ? global.users : users;
+        const user = userArray.find(u => u.id === req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            assessments: user.assessments || [],
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error fetching assessments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch assessments'
+        });
+    }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -131,6 +131,10 @@
             
             <div class="content-container">
                 <aside class="sidebar">
+                    <div id="bookInfo" style="padding: 15px; background: linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,255,136,0.1)); border-radius: 10px; margin-bottom: 20px; display: none; border: 1px solid rgba(0,255,255,0.3); box-shadow: 0 4px 15px rgba(0,255,255,0.1);">
+                        <h4 style="color: #00ffff; margin-bottom: 15px; font-size: 15px; text-align: center; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px;">📘 About This Book</h4>
+                        <div id="authorInfo" style="color: #888; font-size: 12px;"></div>
+                    </div>
                     <h3>Chapters</h3>
                     <div id="chaptersList"></div>
                 </aside>
@@ -140,33 +144,7 @@
                         <h2>Welcome to the Physical AI & Robotics Book</h2>
                         <p>Select a chapter from the sidebar to begin your journey in robotics and AI.</p>
                     </div>
-                    
-                    <div class="chat-section">
-                        <h3>🤖 AI Robotics Assistant</h3>
-                        <div class="chat-container">
-                            <div id="chatMessages" class="chat-messages">
-                                <div class="message bot">
-                                    <div class="avatar">🤖</div>
-                                    <div class="content">
-                                        <p>Hello! I'm your AI Robotics Assistant. How can I help you understand Physical AI and Robotics today?</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="chat-input-container">
-                                <input type="text" id="userInput" placeholder="Ask a question about robotics, AI, ROS2, etc..." onkeypress="handleKeyPress(event)">
-                                <button onclick="sendMessage()" class="send-btn">Send</button>
-                            </div>
-                            
-                            <div class="language-selector">
-                                <label for="chatLanguage">Response Language:</label>
-                                <select id="chatLanguage">
-                                    <option value="english">English</option>
-                                    <option value="urdu">Urdu</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+
                 </main>
             </div>
         </div>
@@ -227,8 +205,95 @@
                 </div>
             </div>
         </div>
+
+        <!-- Quiz Modal -->
+        <div id="quizModal" class="quiz-modal">
+            <div class="quiz-content">
+                <div id="quizBody"></div>
+            </div>
+        </div>
+
+        <!-- Floating Chatbot Button -->
+        <button id="chatbotFloatingBtn" class="chatbot-floating-btn" onclick="toggleChatbot()" title="AI Assistant" style="display: none;">
+            <div class="robot-icon-3d">
+                <div class="robot-head">
+                    <div class="robot-antenna"></div>
+                    <div class="robot-eyes">
+                        <div class="robot-eye left"></div>
+                        <div class="robot-eye right"></div>
+                    </div>
+                    <div class="robot-mouth"></div>
+                </div>
+                <div class="robot-body">
+                    <div class="robot-chest-light"></div>
+                </div>
+            </div>
+            <span class="chatbot-label">AI Help</span>
+        </button>
+
+        <!-- Chatbot Popup Modal -->
+        <div id="chatbotModal" class="chatbot-modal" style="display: none;">
+            <div class="chatbot-popup">
+                <div class="chatbot-header">
+                    <div class="chatbot-header-left">
+                        <div class="robot-avatar">
+                            <div class="robot-head-small">
+                                <div class="robot-antenna-small"></div>
+                                <div class="robot-eyes-small">
+                                    <div class="robot-eye-small left"></div>
+                                    <div class="robot-eye-small right"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chatbot-title">
+                            <h3>AI Robotics Assistant</h3>
+                            <span class="chatbot-status">Online</span>
+                        </div>
+                    </div>
+                    <button onclick="toggleChatbot()" class="chatbot-close-btn">&times;</button>
+                </div>
+
+                <div class="chatbot-body">
+                    <div id="chatbotMessages" class="chatbot-messages">
+                        <div class="message bot">
+                            <div class="bot-avatar">🤖</div>
+                            <div class="message-content">
+                                <p><strong>Hello! میں آپ کا AI Robotics Assistant ہوں</strong></p>
+                                <p>I can help you with:</p>
+                                <ul>
+                                    <li>Understanding robotics concepts - روبوٹکس کے تصورات کو سمجھنا</li>
+                                    <li>Explaining ROS2 and computer vision - ROS2 اور کمپیوٹر ویژن کی وضاحت</li>
+                                    <li>Clarifying chapter content - باب کے مواد کو واضح کرنا</li>
+                                    <li>Answering technical questions - تکنیکی سوالات کے جوابات</li>
+                                </ul>
+                                <p><strong>How can I help you? | میں آپ کی کیسے مدد کر سکتا ہوں؟</strong></p>
+                                <p style="font-size: 12px; color: #888; margin-top: 10px;">💡 Select your language below for responses</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chatbot-language-selector">
+                        <label for="chatbotLanguage">Response Language:</label>
+                        <select id="chatbotLanguage">
+                            <option value="english">English</option>
+                            <option value="urdu">Urdu</option>
+                        </select>
+                    </div>
+
+                    <div class="chatbot-input-container">
+                        <input type="text" id="chatbotInput" placeholder="Ask me anything about robotics, AI, ROS2..." onkeypress="handleChatbotKeyPress(event)">
+                        <button onclick="sendChatbotMessage()" class="chatbot-send-btn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2.1"></script>
 </body>
 </html>

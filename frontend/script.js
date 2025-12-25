@@ -330,11 +330,11 @@ function logout() {
     }
 }
 
-// Load book content
+// Load book structure (metadata only, fast)
 async function loadBookContent() {
     try {
-        // Use public or protected endpoint based on mode
-        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-content` : `${API_BASE_URL}/book-content`;
+        // Use public or protected endpoint based on mode - now using book-structure for faster loading
+        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-structure` : `${API_BASE_URL}/book-structure`;
         const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
 
         const response = await fetch(endpoint, { headers });
@@ -343,20 +343,20 @@ async function loadBookContent() {
 
         if (data.success) {
             // Update book content display (we'll update this when a chapter is selected)
-            console.log('Book content loaded');
+            console.log('Book structure loaded (chapters will load on-demand)');
         } else {
-            console.error('Failed to load book content:', data.message);
+            console.error('Failed to load book structure:', data.message);
         }
     } catch (error) {
-        console.error('Error loading book content:', error);
+        console.error('Error loading book structure:', error);
     }
 }
 
 // Load chapters list (now with modules)
 async function loadChapters() {
     try {
-        // Use public or protected endpoint based on mode
-        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-content` : `${API_BASE_URL}/book-content`;
+        // Use public or protected endpoint based on mode - using book-structure for faster loading
+        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-structure` : `${API_BASE_URL}/book-structure`;
         const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
 
         const response = await fetch(endpoint, { headers });
@@ -834,7 +834,7 @@ function markChapterComplete(chapterId, moduleId) {
 }
 
 // Select chapter and track as current
-function selectChapter(chapter) {
+async function selectChapter(chapter) {
     // Stop previous timer if running
     if (readingTimer) {
         clearInterval(readingTimer);
@@ -848,63 +848,107 @@ function selectChapter(chapter) {
     bookProgress.readingStartTime = Date.now();
     bookProgress.readingTimeElapsed = 0;
 
-    // Display chapter content with timer
+    // Display loading state
     const bookContent = document.getElementById('bookContent');
-    const parsedContent = parseMarkdown(chapter.content);
-
-    // Store chapter for navigation
-    window.currentChapterData = chapter;
-
     bookContent.innerHTML = `
-        <button class="back-to-library" onclick="exitReadingMode()">
-            ← Back to Library
-        </button>
-
-        <div class="reading-progress">
-            <div class="reading-progress-bar" id="readingProgressBar"></div>
-        </div>
-
-        <div class="chapter-header">
-            <h1>${chapter.title}</h1>
-            <div class="chapter-meta">
-                <span>📖 ${chapter.readingTime}</span>
-                <span id="readingTimerDisplay" style="margin-left: 20px; color: #00ffff;">⏱️ 00:00</span>
-                <button onclick="markChapterComplete('${chapter.id}', '${chapter.moduleId || 'unknown'}')" class="mark-complete-btn">
-                    ${bookProgress.completedChapters.includes(chapter.id) ? '✅ Completed' : '✓ Mark as Complete'}
-                </button>
-            </div>
-        </div>
-        <div class="chapter-content">${parsedContent}</div>
-
-        <div class="chapter-navigation">
-            <button class="nav-btn" id="prevChapterBtn" onclick="navigateToPreviousChapter()">
-                ← Previous Chapter
-            </button>
-            <button class="nav-btn" id="nextChapterBtn" onclick="navigateToNextChapter()">
-                Next Chapter →
-            </button>
+        <div style="text-align: center; padding: 100px 20px; color: #00ffff;">
+            <div class="loading" style="margin: 20px auto;"></div>
+            <h2>Loading Chapter...</h2>
+            <p style="color: #888;">Please wait while we fetch the content</p>
         </div>
     `;
 
-    // Setup navigation buttons
-    setupChapterNavigation(chapter);
+    try {
+        // Fetch chapter content on-demand if not already loaded
+        let chapterWithContent = chapter;
+        if (!chapter.content) {
+            console.log(`Fetching content for chapter: ${chapter.id}`);
+            const endpoint = isGuestMode ? `${API_BASE_URL}/public/chapter/${chapter.id}` : `${API_BASE_URL}/chapter/${chapter.id}`;
+            const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
 
-    // Start timer
-    startReadingTimer(chapter);
+            const response = await fetch(endpoint, { headers });
+            const data = await response.json();
 
-    // Track current chapter
-    currentChapter = chapter;
-    bookProgress.currentChapter = chapter.id;
-    saveProgress();
+            if (data.success) {
+                chapterWithContent = data.data.chapter || data.data;
+                console.log(`Chapter content loaded: ${chapter.title}`);
+            } else {
+                throw new Error(data.message || 'Failed to load chapter content');
+            }
+        }
 
-    // Add quiz button
-    addCompleteChapterButton();
+        // Display chapter content with timer
+        const parsedContent = parseMarkdown(chapterWithContent.content);
 
-    // Scroll to top
-    window.scrollTo(0, 0);
+        // Store chapter for navigation
+        window.currentChapterData = chapterWithContent;
 
-    // Setup reading progress indicator
-    setupReadingProgress();
+        bookContent.innerHTML = `
+            <button class="back-to-library" onclick="exitReadingMode()">
+                ← Back to Library
+            </button>
+
+            <div class="reading-progress">
+                <div class="reading-progress-bar" id="readingProgressBar"></div>
+            </div>
+
+            <div class="chapter-header">
+                <h1>${chapterWithContent.title}</h1>
+                <div class="chapter-meta">
+                    <span>📖 ${chapterWithContent.readingTime}</span>
+                    <span id="readingTimerDisplay" style="margin-left: 20px; color: #00ffff;">⏱️ 00:00</span>
+                    <button onclick="markChapterComplete('${chapterWithContent.id}', '${chapterWithContent.moduleId || 'unknown'}')" class="mark-complete-btn">
+                        ${bookProgress.completedChapters.includes(chapterWithContent.id) ? '✅ Completed' : '✓ Mark as Complete'}
+                    </button>
+                </div>
+            </div>
+            <div class="chapter-content">${parsedContent}</div>
+
+            <div class="chapter-navigation">
+                <button class="nav-btn" id="prevChapterBtn" onclick="navigateToPreviousChapter()">
+                    ← Previous Chapter
+                </button>
+                <button class="nav-btn" id="nextChapterBtn" onclick="navigateToNextChapter()">
+                    Next Chapter →
+                </button>
+            </div>
+        `;
+
+        // Setup navigation buttons
+        setupChapterNavigation(chapterWithContent);
+
+        // Start timer
+        startReadingTimer(chapterWithContent);
+
+        // Track current chapter
+        currentChapter = chapterWithContent;
+        bookProgress.currentChapter = chapterWithContent.id;
+        saveProgress();
+
+        // Add quiz button
+        addCompleteChapterButton();
+
+        // Scroll to top
+        window.scrollTo(0, 0);
+
+        // Setup reading progress indicator
+        setupReadingProgress();
+
+        // Store chapter with content for future use
+        chapter.content = chapterWithContent.content;
+
+    } catch (error) {
+        console.error('Error loading chapter:', error);
+        bookContent.innerHTML = `
+            <div style="text-align: center; padding: 100px 20px; color: #ff6b6b;">
+                <h2>❌ Error Loading Chapter</h2>
+                <p style="color: #888;">Failed to load chapter content. Please try again.</p>
+                <button onclick="exitReadingMode()" class="back-to-library" style="margin-top: 20px;">
+                    ← Back to Library
+                </button>
+            </div>
+        `;
+    }
 }
 
 // Start reading timer
@@ -977,8 +1021,8 @@ window.addEventListener('click', (e) => {
 // Update dashboard with current progress
 async function updateDashboard() {
     try {
-        // Fetch book content to get module structure
-        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-content` : `${API_BASE_URL}/book-content`;
+        // Fetch book structure to get module metadata
+        const endpoint = isGuestMode ? `${API_BASE_URL}/public/book-structure` : `${API_BASE_URL}/book-structure`;
         const headers = isGuestMode ? {} : { 'Authorization': `Bearer ${authToken}` };
         const response = await fetch(endpoint, { headers });
         const data = await response.json();

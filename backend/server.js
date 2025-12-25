@@ -1041,20 +1041,143 @@ app.post('/api/chat', protect, async (req, res) => {
     }
 });
 
-// Import modular book content
-const structuredBookContent = require('./book_content');
-
-// Public route for book content (no authentication required)
-app.get('/api/public/book-content', async (req, res) => {
+// Helper function to load book content lazily (without loading all chapter content)
+function getBookStructure() {
     try {
-        console.log('Guest user accessed book content');
+        // Load the full book content
+        const fullContent = require('./book_content');
 
-        // Return the structured modular book content
+        // Extract only the structure (metadata) without full chapter content
+        const structure = {
+            title: fullContent.title,
+            description: fullContent.description,
+            author: fullContent.author,
+            authorBio: fullContent.authorBio,
+            publicationDate: fullContent.publicationDate,
+            version: fullContent.version,
+            totalModules: fullContent.totalModules,
+            totalChapters: fullContent.totalChapters,
+            modules: fullContent.modules.map(module => ({
+                id: module.id,
+                title: module.title,
+                description: module.description,
+                difficulty: module.difficulty,
+                estimatedTime: module.estimatedTime,
+                chapters: module.chapters.map(chapter => ({
+                    id: chapter.id,
+                    title: chapter.title,
+                    learningObjectives: chapter.learningObjectives,
+                    readingTime: chapter.readingTime,
+                    keywords: chapter.keywords
+                    // Note: we exclude the full 'content' field here to keep response small
+                }))
+            }))
+        };
+
+        return structure;
+    } catch (error) {
+        console.error('Error loading book structure:', error);
+        throw error;
+    }
+}
+
+// Helper function to get a specific chapter by ID
+function getChapterById(chapterId) {
+    try {
+        const fullContent = require('./book_content');
+
+        // Search for the chapter across all modules
+        for (const module of fullContent.modules) {
+            const chapter = module.chapters.find(ch => ch.id === chapterId);
+            if (chapter) {
+                return {
+                    ...chapter,
+                    moduleInfo: {
+                        id: module.id,
+                        title: module.title,
+                        difficulty: module.difficulty
+                    }
+                };
+            }
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error loading chapter:', error);
+        throw error;
+    }
+}
+
+// NEW: Public route for book structure (metadata only, fast response)
+app.get('/api/public/book-structure', async (req, res) => {
+    try {
+        console.log('Guest user accessed book structure');
+
+        const structure = getBookStructure();
+
         res.json({
             success: true,
-            message: 'Book content retrieved successfully',
+            message: 'Book structure retrieved successfully',
+            data: structure,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error("Error in public book structure API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during book structure retrieval.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// NEW: Public route for individual chapter content
+app.get('/api/public/chapter/:chapterId', async (req, res) => {
+    try {
+        const { chapterId } = req.params;
+        console.log(`Guest user accessed chapter: ${chapterId}`);
+
+        const chapter = getChapterById(chapterId);
+
+        if (!chapter) {
+            return res.status(404).json({
+                success: false,
+                message: 'Chapter not found',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Chapter content retrieved successfully',
+            data: chapter,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error("Error in public chapter API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during chapter retrieval.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// DEPRECATED: Old endpoint - kept for backwards compatibility but now uses lazy loading
+app.get('/api/public/book-content', async (req, res) => {
+    try {
+        console.log('Guest user accessed book content (deprecated - use /book-structure instead)');
+
+        // Return only the structure to avoid timeout
+        const structure = getBookStructure();
+
+        res.json({
+            success: true,
+            message: 'Book structure retrieved successfully. Use /api/public/chapter/:chapterId for chapter content.',
             data: {
-                bookContent: structuredBookContent,
+                bookContent: structure,
                 timestamp: new Date().toISOString()
             }
         });
@@ -1069,22 +1192,94 @@ app.get('/api/public/book-content', async (req, res) => {
     }
 });
 
-// Protected route for book content (for logged-in users)
-app.get('/api/book-content', protect, async (req, res) => {
+// Protected route for book structure (for logged-in users)
+app.get('/api/book-structure', protect, async (req, res) => {
     try {
-        console.log(`User ${req.user.email} accessed book content`);
+        console.log(`User ${req.user.email} accessed book structure`);
 
-        // Return the structured modular book content
+        const structure = getBookStructure();
+
         res.json({
             success: true,
-            message: 'Book content retrieved successfully',
+            message: 'Book structure retrieved successfully',
             data: {
                 user: {
                     id: req.user.id,
                     name: req.user.name,
                     email: req.user.email
                 },
-                bookContent: structuredBookContent,
+                bookContent: structure,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Error in book structure API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during book structure retrieval.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Protected route for individual chapter (for logged-in users)
+app.get('/api/chapter/:chapterId', protect, async (req, res) => {
+    try {
+        const { chapterId } = req.params;
+        console.log(`User ${req.user.email} accessed chapter: ${chapterId}`);
+
+        const chapter = getChapterById(chapterId);
+
+        if (!chapter) {
+            return res.status(404).json({
+                success: false,
+                message: 'Chapter not found',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Chapter content retrieved successfully',
+            data: {
+                user: {
+                    id: req.user.id,
+                    name: req.user.name,
+                    email: req.user.email
+                },
+                chapter: chapter,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("Error in chapter API:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during chapter retrieval.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// DEPRECATED: Protected route for book content (kept for backwards compatibility)
+app.get('/api/book-content', protect, async (req, res) => {
+    try {
+        console.log(`User ${req.user.email} accessed book content (deprecated - use /book-structure instead)`);
+
+        const structure = getBookStructure();
+
+        res.json({
+            success: true,
+            message: 'Book structure retrieved successfully. Use /api/chapter/:chapterId for chapter content.',
+            data: {
+                user: {
+                    id: req.user.id,
+                    name: req.user.name,
+                    email: req.user.email
+                },
+                bookContent: structure,
                 timestamp: new Date().toISOString()
             }
         });

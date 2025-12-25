@@ -102,6 +102,11 @@ app.use(cors({
       return callback(null, true);
     }
 
+    // Allow all book-hackathone frontend deployments
+    if (origin.includes('book-hackathone') && origin.includes('minahil-hamzas-projects.vercel.app')) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {

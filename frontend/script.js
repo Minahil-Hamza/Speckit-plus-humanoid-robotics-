@@ -1650,7 +1650,7 @@ async function startQuiz(chapter) {
     quizStartTime = Date.now();
 
     try {
-        // Generate MCQs from backend
+        // Try backend with 5-second timeout
         const endpoint = isGuestMode ? `${API_BASE_URL}/public/chat` : `${API_BASE_URL}/generate-mcqs`;
         const headers = isGuestMode
             ? { 'Content-Type': 'application/json' }
@@ -1659,14 +1659,15 @@ async function startQuiz(chapter) {
         let response, data;
 
         if (isGuestMode) {
-            // For guest mode, use chat to generate questions
+            // For guest mode, use chat to generate questions with timeout
             response = await fetch(endpoint, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({
                     query: `Generate 5 multiple choice questions about: ${chapter.title}. Return only valid JSON with this format: {"questions":[{"question":"text","options":{"A":"opt1","B":"opt2","C":"opt3","D":"opt4"},"correctAnswer":"A","explanation":"why"}]}`,
                     language: 'english'
-                })
+                }),
+                signal: AbortSignal.timeout(5000)
             });
             data = await response.json();
 
@@ -1675,15 +1676,15 @@ async function startQuiz(chapter) {
                 const jsonMatch = data.answer.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
                     const parsed = JSON.parse(jsonMatch[0]);
-                    currentQuiz = parsed.questions || generateFallbackQuiz(chapter);
+                    currentQuiz = parsed.questions || generateLocalQuiz(chapter);
                 } else {
-                    currentQuiz = generateFallbackQuiz(chapter);
+                    currentQuiz = generateLocalQuiz(chapter);
                 }
             } catch (e) {
-                currentQuiz = generateFallbackQuiz(chapter);
+                currentQuiz = generateLocalQuiz(chapter);
             }
         } else {
-            // For logged-in users, use dedicated MCQ endpoint
+            // For logged-in users, use dedicated MCQ endpoint with timeout
             response = await fetch(endpoint, {
                 method: 'POST',
                 headers: headers,
@@ -1691,10 +1692,11 @@ async function startQuiz(chapter) {
                     chapterId: chapter.id,
                     chapterContent: chapter.content,
                     numberOfQuestions: 5
-                })
+                }),
+                signal: AbortSignal.timeout(5000)
             });
             data = await response.json();
-            currentQuiz = data.success ? data.mcqs : generateFallbackQuiz(chapter);
+            currentQuiz = data.success ? data.mcqs : generateLocalQuiz(chapter);
         }
 
         currentQuestionIndex = 0;
@@ -1703,73 +1705,310 @@ async function startQuiz(chapter) {
         displayQuizQuestion();
 
     } catch (error) {
-        console.error('Error loading quiz:', error);
-        currentQuiz = generateFallbackQuiz(chapter);
+        console.log('Backend unavailable, using local quiz generation:', error.message);
+        currentQuiz = generateLocalQuiz(chapter);
         currentQuestionIndex = 0;
         quizAnswers = [];
         displayQuizQuestion();
     }
 }
 
-// Generate fallback quiz questions
-function generateFallbackQuiz(chapter) {
-    return [
-        {
-            question: `What is the main topic covered in "${chapter.title}"?`,
-            options: {
-                A: "Understanding the fundamental concepts",
-                B: "Advanced implementation details only",
-                C: "Historical background only",
-                D: "Future predictions"
+// Generate local quiz questions based on chapter topic
+function generateLocalQuiz(chapter) {
+    const title = chapter.title.toLowerCase();
+    const quizDB = {
+        // ROS2 topics
+        ros: [
+            {
+                question: "What does ROS stand for in robotics?",
+                options: { A: "Robot Operating System", B: "Remote Operation Service", C: "Robotic Output Sensor", D: "Real-time Operating Software" },
+                correctAnswer: "A",
+                explanation: "ROS stands for Robot Operating System, a flexible framework for writing robot software."
             },
-            correctAnswer: "A",
-            explanation: "This chapter focuses on understanding the fundamental concepts of the topic."
-        },
-        {
-            question: "Why is this topic important in robotics and AI?",
-            options: {
-                A: "It's not important",
-                B: "It forms the foundation for advanced applications",
-                C: "It's only for academic purposes",
-                D: "It's outdated"
+            {
+                question: "What is the primary communication pattern in ROS2?",
+                options: { A: "Client-Server", B: "Publisher-Subscriber", C: "Peer-to-Peer", D: "Master-Slave" },
+                correctAnswer: "B",
+                explanation: "ROS2 uses Publisher-Subscriber pattern as its primary communication mechanism for topics."
             },
-            correctAnswer: "B",
-            explanation: "This topic is crucial as it forms the foundation for more advanced applications."
-        },
-        {
-            question: "What is a key takeaway from this chapter?",
-            options: {
-                A: "Memorize all definitions",
-                B: "Understand core concepts and their applications",
-                C: "Skip to advanced topics",
-                D: "Focus only on theory"
+            {
+                question: "What are ROS2 nodes?",
+                options: { A: "Hardware components", B: "Individual processes in a robotic system", C: "Network connections", D: "Data storage units" },
+                correctAnswer: "B",
+                explanation: "Nodes are individual processes that perform computation and communicate via topics, services, and actions."
             },
-            correctAnswer: "B",
-            explanation: "The key is to understand core concepts and how they apply in practice."
-        },
-        {
-            question: "How should you approach learning this topic?",
-            options: {
-                A: "Rush through quickly",
-                B: "Skip the examples",
-                C: "Take time to understand and practice",
-                D: "Only read the summary"
+            {
+                question: "What is a topic in ROS2?",
+                options: { A: "A named bus for message passing", B: "A configuration file", C: "A type of sensor", D: "A control algorithm" },
+                correctAnswer: "A",
+                explanation: "Topics are named buses over which nodes exchange messages using publish-subscribe pattern."
             },
-            correctAnswer: "C",
-            explanation: "The best approach is to take time to understand concepts and practice applying them."
-        },
-        {
-            question: "What's the next step after completing this chapter?",
-            options: {
-                A: "Stop learning",
-                B: "Move to the next chapter and build on this knowledge",
-                C: "Repeat this chapter indefinitely",
-                D: "Skip several chapters"
+            {
+                question: "What is the difference between ROS and ROS2?",
+                options: { A: "No difference", B: "ROS2 supports real-time and multi-robot systems", C: "ROS2 is only for Python", D: "ROS2 removed all features" },
+                correctAnswer: "B",
+                explanation: "ROS2 adds real-time capabilities, better security, multi-robot support, and cross-platform compatibility."
+            }
+        ],
+        // Computer Vision
+        vision: [
+            {
+                question: "What is computer vision primarily concerned with?",
+                options: { A: "Audio processing", B: "Enabling computers to interpret visual information", C: "Network security", D: "Database management" },
+                correctAnswer: "B",
+                explanation: "Computer vision is about enabling computers to derive meaningful information from digital images and videos."
             },
-            correctAnswer: "B",
-            explanation: "The best approach is to build on this knowledge by progressing to the next chapter."
-        }
-    ];
+            {
+                question: "What does YOLO stand for in object detection?",
+                options: { A: "You Only Look Once", B: "Yellow Object Location Output", C: "Yield Oriented Learning Object", D: "Young Optimized Layer Operation" },
+                correctAnswer: "A",
+                explanation: "YOLO (You Only Look Once) is a real-time object detection algorithm that processes images in a single pass."
+            },
+            {
+                question: "What is the purpose of image segmentation?",
+                options: { A: "Compress images", B: "Partition images into meaningful regions", C: "Enhance colors", D: "Remove noise" },
+                correctAnswer: "B",
+                explanation: "Image segmentation partitions an image into multiple segments or regions for easier analysis."
+            },
+            {
+                question: "What is a convolutional neural network (CNN) primarily used for?",
+                options: { A: "Text processing", B: "Image recognition and processing", C: "Audio synthesis", D: "Database queries" },
+                correctAnswer: "B",
+                explanation: "CNNs are specialized neural networks designed for processing grid-like data such as images."
+            },
+            {
+                question: "What is visual SLAM?",
+                options: { A: "Video streaming", B: "Simultaneous Localization and Mapping using cameras", C: "Screen display", D: "Image compression" },
+                correctAnswer: "B",
+                explanation: "Visual SLAM uses camera inputs to simultaneously build a map and localize the robot within it."
+            }
+        ],
+        // Machine Learning & AI
+        learning: [
+            {
+                question: "What is reinforcement learning?",
+                options: { A: "Learning from labeled data", B: "Learning through trial and error with rewards", C: "Memorizing patterns", D: "Copying human behavior" },
+                correctAnswer: "B",
+                explanation: "Reinforcement learning involves an agent learning to make decisions by receiving rewards or penalties."
+            },
+            {
+                question: "What does DQN stand for?",
+                options: { A: "Deep Quality Network", B: "Deep Q-Network", C: "Dynamic Query Node", D: "Data Queue Navigator" },
+                correctAnswer: "B",
+                explanation: "DQN (Deep Q-Network) combines Q-learning with deep neural networks for reinforcement learning."
+            },
+            {
+                question: "What is transfer learning?",
+                options: { A: "Moving data between computers", B: "Using knowledge from one task to improve another", C: "Transferring files", D: "Network protocols" },
+                correctAnswer: "B",
+                explanation: "Transfer learning leverages knowledge gained from one task to improve performance on a related task."
+            },
+            {
+                question: "What is the purpose of a neural network?",
+                options: { A: "Store data", B: "Learn patterns from data to make predictions", C: "Connect computers", D: "Encrypt information" },
+                correctAnswer: "B",
+                explanation: "Neural networks learn complex patterns from data to perform tasks like classification and prediction."
+            },
+            {
+                question: "What is imitation learning?",
+                options: { A: "Copying code", B: "Learning by observing expert demonstrations", C: "Duplicating hardware", D: "Mirroring displays" },
+                correctAnswer: "B",
+                explanation: "Imitation learning involves training agents by having them observe and replicate expert behavior."
+            }
+        ],
+        // Navigation & SLAM
+        navigation: [
+            {
+                question: "What does SLAM stand for?",
+                options: { A: "Systematic Location and Mapping", B: "Simultaneous Localization and Mapping", C: "Sensor Location Analysis Method", D: "Smart Learning Algorithm Model" },
+                correctAnswer: "B",
+                explanation: "SLAM is the process of simultaneously building a map while localizing the robot within that map."
+            },
+            {
+                question: "What is AMCL used for in robotics?",
+                options: { A: "Motor control", B: "Adaptive Monte Carlo Localization", C: "Arm manipulation", D: "Audio processing" },
+                correctAnswer: "B",
+                explanation: "AMCL (Adaptive Monte Carlo Localization) is a probabilistic localization system for robots."
+            },
+            {
+                question: "What is path planning in robotics?",
+                options: { A: "Planning robot design", B: "Finding optimal routes from start to goal", C: "Scheduling tasks", D: "Network routing" },
+                correctAnswer: "B",
+                explanation: "Path planning involves computing collision-free paths from the robot's current position to a goal."
+            },
+            {
+                question: "What is obstacle avoidance?",
+                options: { A: "Ignoring objects", B: "Detecting and navigating around obstacles", C: "Removing obstacles", D: "Stopping completely" },
+                correctAnswer: "B",
+                explanation: "Obstacle avoidance enables robots to detect obstacles and plan paths around them safely."
+            },
+            {
+                question: "What is the Nav2 stack?",
+                options: { A: "Navigation2 - ROS2 navigation framework", B: "Network adapter version 2", C: "Naval architecture tool", D: "Navigation app" },
+                correctAnswer: "A",
+                explanation: "Nav2 is the ROS2 navigation stack providing complete autonomous navigation capabilities."
+            }
+        ],
+        // Humanoid Robotics
+        humanoid: [
+            {
+                question: "What is bipedal locomotion?",
+                options: { A: "Four-legged walking", B: "Walking on two legs", C: "Wheeled movement", D: "Flying" },
+                correctAnswer: "B",
+                explanation: "Bipedal locomotion refers to walking on two legs, the primary mode of human movement."
+            },
+            {
+                question: "What does ZMP stand for in robotics?",
+                options: { A: "Zero Momentum Point", B: "Zone Management Protocol", C: "Zonal Motion Pattern", D: "Zero Motor Power" },
+                correctAnswer: "A",
+                explanation: "ZMP (Zero Moment Point) is used for balance control in bipedal robots to prevent tipping."
+            },
+            {
+                question: "What is whole-body control?",
+                options: { A: "Controlling only arms", B: "Coordinated control of all robot joints", C: "Remote control", D: "Voice control" },
+                correctAnswer: "B",
+                explanation: "Whole-body control coordinates all joints to achieve complex motions while maintaining balance."
+            },
+            {
+                question: "Name a famous humanoid robot company/project:",
+                options: { A: "Tesla Optimus", B: "Roomba", C: "Alexa", D: "Drone Pro" },
+                correctAnswer: "A",
+                explanation: "Tesla Optimus, Boston Dynamics Atlas, and Figure 01 are leading humanoid robot projects."
+            },
+            {
+                question: "What is gait generation?",
+                options: { A: "Opening gates", B: "Creating walking patterns for robots", C: "Generating power", D: "Gate control systems" },
+                correctAnswer: "B",
+                explanation: "Gait generation creates stable walking patterns and motions for bipedal robots."
+            }
+        ],
+        // Sensors & Hardware
+        sensor: [
+            {
+                question: "What does LiDAR measure?",
+                options: { A: "Temperature", B: "Distance using laser light", C: "Humidity", D: "Sound waves" },
+                correctAnswer: "B",
+                explanation: "LiDAR (Light Detection and Ranging) uses laser pulses to measure distances and create 3D maps."
+            },
+            {
+                question: "What is an IMU in robotics?",
+                options: { A: "Image Management Unit", B: "Inertial Measurement Unit", C: "Internal Motor Unit", D: "Integrated Memory Unit" },
+                correctAnswer: "B",
+                explanation: "IMU measures acceleration, angular velocity, and orientation using accelerometers and gyroscopes."
+            },
+            {
+                question: "What is sensor fusion?",
+                options: { A: "Melting sensors", B: "Combining data from multiple sensors", C: "Single sensor operation", D: "Sensor repair" },
+                correctAnswer: "B",
+                explanation: "Sensor fusion combines data from multiple sensors to achieve more accurate and reliable information."
+            },
+            {
+                question: "What is a depth camera used for?",
+                options: { A: "Taking photos", B: "Measuring distance to objects in a scene", C: "Night vision", D: "Thermal imaging" },
+                correctAnswer: "B",
+                explanation: "Depth cameras capture distance information for each pixel, enabling 3D perception."
+            },
+            {
+                question: "What is NVIDIA Jetson?",
+                options: { A: "A robot model", B: "Edge AI computing platform", C: "A sensor type", D: "Software framework" },
+                correctAnswer: "B",
+                explanation: "NVIDIA Jetson is a series of embedded computing boards designed for AI and robotics applications."
+            }
+        ],
+        // Control & Manipulation
+        control: [
+            {
+                question: "What is inverse kinematics?",
+                options: { A: "Reversing motors", B: "Computing joint angles to achieve desired end-effector pose", C: "Backward movement", D: "Opposite control" },
+                correctAnswer: "B",
+                explanation: "Inverse kinematics calculates the joint parameters needed to position the end-effector at a desired location."
+            },
+            {
+                question: "What is a PID controller?",
+                options: { A: "Personal ID", B: "Proportional-Integral-Derivative controller", C: "Power Input Device", D: "Protocol Interface Driver" },
+                correctAnswer: "B",
+                explanation: "PID is a feedback control loop mechanism widely used in industrial control systems and robotics."
+            },
+            {
+                question: "What is MoveIt used for in ROS?",
+                options: { A: "Moving files", B: "Motion planning and manipulation", C: "Video streaming", D: "Data transfer" },
+                correctAnswer: "B",
+                explanation: "MoveIt is the ROS framework for motion planning, manipulation, and inverse kinematics."
+            },
+            {
+                question: "What is an end-effector?",
+                options: { A: "The last chapter", B: "Device at the end of a robotic arm", C: "Final program", D: "End user" },
+                correctAnswer: "B",
+                explanation: "An end-effector is the device at the end of a robotic arm (gripper, tool, etc.) that interacts with the environment."
+            },
+            {
+                question: "What is trajectory planning?",
+                options: { A: "Planning routes", B: "Computing time-parameterized paths for robot motion", C: "Drawing trajectories", D: "Flight planning" },
+                correctAnswer: "B",
+                explanation: "Trajectory planning creates smooth, time-based motion paths considering velocity and acceleration constraints."
+            }
+        ],
+        // Autonomous Systems
+        autonomous: [
+            {
+                question: "What is an autonomous system?",
+                options: { A: "Remote controlled", B: "Self-governing system that operates independently", C: "Manual operation", D: "Voice controlled" },
+                correctAnswer: "B",
+                explanation: "Autonomous systems can perceive, decide, and act independently without continuous human intervention."
+            },
+            {
+                question: "What sensors do self-driving cars typically use?",
+                options: { A: "Only cameras", B: "LiDAR, cameras, radar, and ultrasonic sensors", C: "Only GPS", D: "Only radar" },
+                correctAnswer: "B",
+                explanation: "Autonomous vehicles use multiple sensor types for redundancy and comprehensive environment perception."
+            },
+            {
+                question: "What is behavior planning in autonomous systems?",
+                options: { A: "Predicting behavior", B: "High-level decision making for task execution", C: "Behavior analysis", D: "User profiling" },
+                correctAnswer: "B",
+                explanation: "Behavior planning determines what actions the robot should take to achieve its goals."
+            },
+            {
+                question: "What is localization in robotics?",
+                options: { A: "Finding local shops", B: "Determining robot's position and orientation", C: "Language translation", D: "Regional settings" },
+                correctAnswer: "B",
+                explanation: "Localization is the process of determining the robot's pose (position and orientation) in its environment."
+            },
+            {
+                question: "What is multi-robot coordination?",
+                options: { A: "Single robot control", B: "Coordinating multiple robots to work together", C: "Robot repair", D: "Robot storage" },
+                correctAnswer: "B",
+                explanation: "Multi-robot coordination enables multiple robots to collaborate and achieve common goals efficiently."
+            }
+        ]
+    };
+
+    // Determine which quiz set to use based on chapter title
+    let selectedQuiz = [];
+    if (title.includes('ros')) selectedQuiz = quizDB.ros;
+    else if (title.includes('vision') || title.includes('camera') || title.includes('image') || title.includes('cv') || title.includes('yolo')) selectedQuiz = quizDB.vision;
+    else if (title.includes('learning') || title.includes('neural') || title.includes('ai') || title.includes('ml') || title.includes('dqn') || title.includes('ppo')) selectedQuiz = quizDB.learning;
+    else if (title.includes('navigation') || title.includes('slam') || title.includes('amcl') || title.includes('path') || title.includes('nav2')) selectedQuiz = quizDB.navigation;
+    else if (title.includes('humanoid') || title.includes('bipedal') || title.includes('walk') || title.includes('zmp') || title.includes('gait')) selectedQuiz = quizDB.humanoid;
+    else if (title.includes('sensor') || title.includes('lidar') || title.includes('imu') || title.includes('camera') || title.includes('jetson')) selectedQuiz = quizDB.sensor;
+    else if (title.includes('control') || title.includes('kinematics') || title.includes('manipulation') || title.includes('moveit') || title.includes('pid')) selectedQuiz = quizDB.control;
+    else if (title.includes('autonomous') || title.includes('self-driving') || title.includes('vehicle') || title.includes('delivery')) selectedQuiz = quizDB.autonomous;
+    else {
+        // Default: mix questions from different topics
+        selectedQuiz = [
+            quizDB.ros[0],
+            quizDB.vision[0],
+            quizDB.learning[0],
+            quizDB.navigation[0],
+            quizDB.humanoid[0]
+        ];
+    }
+
+    // Return 5 questions (shuffle if more than 5 available)
+    if (selectedQuiz.length > 5) {
+        return selectedQuiz.sort(() => 0.5 - Math.random()).slice(0, 5);
+    }
+    return selectedQuiz;
 }
 
 // Display current quiz question

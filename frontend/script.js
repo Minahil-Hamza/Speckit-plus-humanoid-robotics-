@@ -207,7 +207,8 @@ async function register() {
                 name,
                 email,
                 password
-            })
+            }),
+            signal: AbortSignal.timeout(8000)
         });
 
         const data = await response.json();
@@ -222,7 +223,20 @@ async function register() {
         }
     } catch (error) {
         console.error('Registration error:', error);
-        alert('Registration failed: ' + error.message);
+
+        // Show user-friendly message about backend unavailability
+        const useGuest = confirm(
+            '⚠️ Registration server is currently unavailable.\n\n' +
+            'Would you like to continue as a Guest instead?\n\n' +
+            '✓ Guest mode gives you full access to all 10 modules and 80 chapters\n' +
+            '✓ AI chatbot with Urdu support\n' +
+            '✓ Progress tracking (saved locally)\n\n' +
+            'Click OK to start learning now, or Cancel to try registration later.'
+        );
+
+        if (useGuest) {
+            startGuestMode();
+        }
     }
 }
 
@@ -2233,6 +2247,7 @@ async function login() {
     }
 
     try {
+        // Try to login with backend (with timeout)
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: {
@@ -2241,7 +2256,8 @@ async function login() {
             body: JSON.stringify({
                 email,
                 password
-            })
+            }),
+            signal: AbortSignal.timeout(8000)
         });
 
         const data = await response.json();
@@ -2249,6 +2265,7 @@ async function login() {
         if (data.success) {
             currentUser = data.data.user;
             authToken = data.data.token;
+            isGuestMode = false;
 
             // Store auth data
             localStorage.setItem('authToken', authToken);
@@ -2282,7 +2299,20 @@ async function login() {
         }
     } catch (error) {
         console.error('Login error:', error);
-        alert('Login failed. Please check your connection and try again.');
+
+        // Show user-friendly message about backend unavailability
+        const useGuest = confirm(
+            '⚠️ Authentication server is currently unavailable.\n\n' +
+            'Would you like to continue as a Guest instead?\n\n' +
+            '✓ Guest mode gives you full access to all 10 modules and 80 chapters\n' +
+            '✓ AI chatbot with Urdu support\n' +
+            '✓ Progress tracking (saved locally)\n\n' +
+            'Click OK to start learning now, or Cancel to try login later.'
+        );
+
+        if (useGuest) {
+            startGuestMode();
+        }
     }
 }
 // ========================================
